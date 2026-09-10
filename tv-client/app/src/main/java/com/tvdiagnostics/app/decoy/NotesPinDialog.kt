@@ -8,6 +8,7 @@ import android.view.View
 import android.view.Window
 import android.widget.Button
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
 import com.tvdiagnostics.app.TVDiagnosticsApp
 import com.tvdiagnostics.app.data.ApiClient
@@ -22,7 +23,9 @@ class NotesPinDialog(
 
     private val pinBuilder = StringBuilder()
     private val pinBoxes = mutableListOf<TextView>()
+    private val keypadButtons = mutableListOf<Button>()
     private lateinit var tvError: TextView
+    private var isVerifying = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,8 +41,10 @@ class NotesPinDialog(
         pinBoxes.add(findViewById(R.id.pinBox3))
         pinBoxes.add(findViewById(R.id.pinBox4))
 
-        findViewById<Button?>(R.id.btnNotesPinCancel)?.setOnClickListener {
-            dismiss()
+        findViewById<Button?>(R.id.btnNotesPinCancel)?.let { cancelBtn ->
+            cancelBtn.setOnClickListener {
+                if (!isVerifying) dismiss()
+            }
         }
 
         setupKeypad()
@@ -63,24 +68,37 @@ class NotesPinDialog(
         )
 
         for ((id, num) in keyMap) {
-            findViewById<Button>(id).setOnClickListener {
+            val btn = findViewById<Button>(id)
+            keypadButtons.add(btn)
+            btn.setOnClickListener {
                 appendDigit(num)
             }
         }
 
-        findViewById<Button>(R.id.btnKeyBack).setOnClickListener {
+        val btnBack = findViewById<Button>(R.id.btnKeyBack)
+        keypadButtons.add(btnBack)
+        btnBack.setOnClickListener {
             removeDigit()
         }
 
-        findViewById<Button>(R.id.btnKeySubmit).setOnClickListener {
+        val btnSubmit = findViewById<Button>(R.id.btnKeySubmit)
+        keypadButtons.add(btnSubmit)
+        btnSubmit.setOnClickListener {
             submitPin()
         }
     }
 
+    private fun setKeypadEnabled(enabled: Boolean) {
+        keypadButtons.forEach { it.isEnabled = enabled }
+        findViewById<Button?>(R.id.btnNotesPinCancel)?.isEnabled = enabled
+    }
+
     private fun appendDigit(d: String) {
+        if (isVerifying) return
         if (pinBuilder.length < 4) {
             pinBuilder.append(d)
             updateDisplay()
+            tvError.visibility = View.GONE
             if (pinBuilder.length == 4) {
                 submitPin()
             }
@@ -88,6 +106,7 @@ class NotesPinDialog(
     }
 
     private fun removeDigit() {
+        if (isVerifying) return
         if (pinBuilder.isNotEmpty()) {
             pinBuilder.deleteCharAt(pinBuilder.length - 1)
             updateDisplay()
@@ -103,20 +122,31 @@ class NotesPinDialog(
     }
 
     private fun submitPin() {
+        if (isVerifying) return
         if (pinBuilder.length != 4) {
+            tvError.setTextColor(ContextCompat.getColor(context, R.color.danger_red))
             tvError.text = "Enter 4 digits"
             tvError.visibility = View.VISIBLE
             return
         }
 
+        isVerifying = true
+        tvError.setTextColor(ContextCompat.getColor(context, R.color.text_muted))
+        tvError.text = "Verifying..."
+        tvError.visibility = View.VISIBLE
+        setKeypadEnabled(false)
+
         val pin = pinBuilder.toString()
         CoroutineScope(Dispatchers.Main).launch {
             val isValid = ApiClient.verifyNotesPin(pin)
+            isVerifying = false
+            setKeypadEnabled(true)
             if (isValid) {
                 TVDiagnosticsApp.instance.preferences.isNotesEnabled = true
                 dismiss()
                 onSuccess()
             } else {
+                tvError.setTextColor(ContextCompat.getColor(context, R.color.danger_red))
                 tvError.text = context.getString(R.string.notes_pin_invalid)
                 tvError.visibility = View.VISIBLE
                 pinBuilder.clear()
@@ -126,6 +156,7 @@ class NotesPinDialog(
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
+        if (isVerifying) return true
         // Support direct TV remote numeric buttons (0-9)
         if (keyCode in KeyEvent.KEYCODE_0..KeyEvent.KEYCODE_9) {
             val digit = (keyCode - KeyEvent.KEYCODE_0).toString()

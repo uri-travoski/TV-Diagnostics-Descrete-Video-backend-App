@@ -75,9 +75,9 @@
         </div>
 
         <div class="pin-auth">
-            <label for="pinCode" class="metric-label">Diagnostics Access Code (6 Digits):</label>
+            <label for="pinCode" class="metric-label">Diagnostics Access Code (4–6 Digits):</label>
             <div class="pin-input-group">
-                <input type="password" id="pinCode" class="pin-field" maxlength="6" placeholder="••••••" autocomplete="off">
+                <input type="password" id="pinCode" class="pin-field" minlength="4" maxlength="6" placeholder="••••••" autocomplete="off">
                 <button class="btn btn-primary" onclick="verifyPin()">Access</button>
             </div>
             <div id="authError" style="color: #f87171; font-size: 13px; margin-top: 8px; display: none;">Invalid diagnostic access code</div>
@@ -86,12 +86,17 @@
 
     <script>
         document.getElementById("pinCode").addEventListener("keyup", function(e) {
-            if (e.key === "Enter") verifyPin();
+            if (e.key === "Enter" || e.keyCode === 13) verifyPin();
         });
 
         async function verifyPin() {
-            const pin = document.getElementById("pinCode").value;
+            const pin = document.getElementById("pinCode").value.trim();
             const err = document.getElementById("authError");
+            if (!pin) {
+                err.textContent = "Please enter diagnostic access code";
+                err.style.display = "block";
+                return;
+            }
             try {
                 const res = await fetch("/api/v1/auth/verify", {
                     method: "POST",
@@ -103,6 +108,7 @@
                     sessionStorage.setItem("tv_pin", pin);
                     window.location.href = "/admin?pin=" + encodeURIComponent(pin);
                 } else {
+                    err.textContent = "Invalid diagnostic access code";
                     err.style.display = "block";
                 }
             } catch (e) {

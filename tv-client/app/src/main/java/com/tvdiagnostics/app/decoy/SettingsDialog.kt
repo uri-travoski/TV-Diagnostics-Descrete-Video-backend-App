@@ -29,6 +29,8 @@ class SettingsDialog(
 ) : Dialog(context) {
 
     private lateinit var etServerUrl: EditText
+    private lateinit var tvDeviceIpHint: TextView
+    private lateinit var etPinCode: EditText
     private lateinit var tvNotesStatus: TextView
     private lateinit var btnToggleNotes: Button
     private lateinit var tvAutoLockStatus: TextView
@@ -47,6 +49,8 @@ class SettingsDialog(
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
         etServerUrl = findViewById(R.id.etServerUrl)
+        tvDeviceIpHint = findViewById(R.id.tvDeviceIpHint)
+        etPinCode = findViewById(R.id.etPinCode)
         tvNotesStatus = findViewById(R.id.tvNotesStatus)
         btnToggleNotes = findViewById(R.id.btnToggleNotes)
         tvAutoLockStatus = findViewById(R.id.tvAutoLockStatus)
@@ -69,6 +73,15 @@ class SettingsDialog(
 
         val prefs = TVDiagnosticsApp.instance.preferences
         etServerUrl.setText(prefs.serverUrl)
+        etPinCode.setText(prefs.pinCode)
+
+        val ip = getLocalIpAddress()
+        tvDeviceIpHint.text = if (ip != null) {
+            val subnet = ip.substringBeforeLast('.')
+            "Device IP: $ip (Backend typically: http://$subnet.X:8090)"
+        } else {
+            "Default: http://tv-diagnostics:8090 (or http://10.0.2.2:8090 for emulator)"
+        }
 
         updateNotesStatusUI()
         updateAutoLockStatusUI()
@@ -120,14 +133,35 @@ class SettingsDialog(
             val url = etServerUrl.text.toString().trim().trimEnd('/')
             if (url.isNotEmpty()) {
                 prefs.serverUrl = url
-                Toast.makeText(context, "Settings saved: $url", Toast.LENGTH_SHORT).show()
             }
+            val pin = etPinCode.text.toString().trim()
+            if (pin.length in 4..6) {
+                prefs.pinCode = pin
+            }
+            Toast.makeText(context, "Settings saved", Toast.LENGTH_SHORT).show()
             dismiss()
             onDismissCallback?.invoke()
         }
 
         // Set default D-pad focus to test connection button, avoiding popping virtual keyboard
         btnTestConnection.requestFocus()
+    }
+
+    private fun getLocalIpAddress(): String? {
+        try {
+            val interfaces = java.util.Collections.list(java.net.NetworkInterface.getNetworkInterfaces())
+            for (intf in interfaces) {
+                val addrs = java.util.Collections.list(intf.inetAddresses)
+                for (addr in addrs) {
+                    if (!addr.isLoopbackAddress && addr.hostAddress?.indexOf(':') == -1) {
+                        return addr.hostAddress
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return null
     }
 
     private fun testServerConnection() {

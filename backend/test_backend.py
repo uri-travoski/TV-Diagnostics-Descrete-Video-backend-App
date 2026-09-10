@@ -21,17 +21,23 @@ def test_pin_verification():
     res_bad = client.post("/api/v1/auth/verify", json={"pin": "000000"})
     assert res_bad.json()["valid"] is False
     
-    res_good = client.post("/api/v1/auth/verify", json={"pin": "123456"})
-    assert res_good.json()["valid"] is True
-    print("✓ 6-Digit PIN verification passed")
+    res_good_6 = client.post("/api/v1/auth/verify", json={"pin": "123456"})
+    assert res_good_6.json()["valid"] is True
+
+    res_good_4 = client.post("/api/v1/auth/verify", json={"pin": "1234"})
+    assert res_good_4.json()["valid"] is True
+    print("✓ 6-Digit & 4-Digit PIN verification passed")
 
 def test_notes_pin_verification():
     res_bad = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "0000"})
     assert res_bad.json()["valid"] is False
     
-    res_good = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "1234"})
-    assert res_good.json()["valid"] is True
-    print("✓ 4-Digit Notes PIN verification passed")
+    res_good_4 = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "1234"})
+    assert res_good_4.json()["valid"] is True
+
+    res_good_6 = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "123456"})
+    assert res_good_6.json()["valid"] is True
+    print("✓ 4-Digit & 6-Digit Notes PIN verification passed")
 
 def test_videos_list():
     res = client.get("/api/v1/videos")
