@@ -299,11 +299,19 @@ def get_all_videos(
         
     sort_options = {
         "title": "title ASC",
+        "title_asc": "title ASC",
         "title_desc": "title DESC",
         "recent": "created_at DESC",
+        "recent_desc": "created_at DESC",
+        "recent_asc": "created_at ASC",
         "last_watched": "last_watched_at DESC NULLS LAST",
         "duration": "duration DESC",
-        "rating": "rating DESC"
+        "duration_desc": "duration DESC",
+        "duration_asc": "duration ASC",
+        "rating": "rating DESC",
+        "rating_desc": "rating DESC",
+        "rating_asc": "rating ASC",
+        "progress_desc": "watched_seconds DESC"
     }
     order_clause = sort_options.get(sort_by, "title ASC")
     query += f" ORDER BY {order_clause}"

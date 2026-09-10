@@ -32,15 +32,17 @@ class VaultActivity : AppCompatActivity() {
     private lateinit var etSearch: EditText
     private lateinit var layoutTagChips: LinearLayout
     private lateinit var btnTagAll: Button
+    private lateinit var btnVaultSort: Button
 
     private var allVideos = listOf<VideoItem>()
     private var allTags = listOf<TagItem>()
 
-    // Filter states
+    // Filter and Sort states
     private var selectedRatingFilter: Int? = null
     private var isContinueFilter: Boolean = false
     private var selectedTag: String? = null
     private var searchQuery: String = ""
+    private var currentSort: SortOption = SortOption.TITLE_ASC
 
     private val tagButtons = mutableListOf<Button>()
 
@@ -89,6 +91,17 @@ class VaultActivity : AppCompatActivity() {
             selectedTag = null
             highlightActiveTagButton(btnTagAll)
             applyFilters()
+        }
+
+        btnVaultSort = findViewById(R.id.btnVaultSort)
+        btnVaultSort.text = "⇅ ${currentSort.displayName}"
+        btnVaultSort.setOnClickListener {
+            val sortDialog = SortDialog(this, currentSort) { selectedSort ->
+                currentSort = selectedSort
+                btnVaultSort.text = "⇅ ${selectedSort.displayName}"
+                applyFilters()
+            }
+            sortDialog.show()
         }
 
         findViewById<Button>(R.id.btnVaultSettings).setOnClickListener {
@@ -286,7 +299,25 @@ class VaultActivity : AppCompatActivity() {
             true
         }
 
-        adapter.updateData(filtered)
+        val sortedList = filtered.sortedWith { a, b ->
+            when (currentSort) {
+                SortOption.TITLE_ASC -> (a.title.ifBlank { a.filename }).compareTo(b.title.ifBlank { b.filename }, ignoreCase = true)
+                SortOption.TITLE_DESC -> (b.title.ifBlank { b.filename }).compareTo(a.title.ifBlank { a.filename }, ignoreCase = true)
+                SortOption.RATING_DESC -> b.rating.compareTo(a.rating)
+                SortOption.RATING_ASC -> a.rating.compareTo(b.rating)
+                SortOption.RECENT_DESC -> b.id.compareTo(a.id)
+                SortOption.RECENT_ASC -> a.id.compareTo(b.id)
+                SortOption.DURATION_DESC -> b.duration.compareTo(a.duration)
+                SortOption.DURATION_ASC -> a.duration.compareTo(b.duration)
+                SortOption.PROGRESS_DESC -> {
+                    val pctA = if (a.duration > 0) a.watchedSeconds / a.duration else 0.0
+                    val pctB = if (b.duration > 0) b.watchedSeconds / b.duration else 0.0
+                    pctB.compareTo(pctA)
+                }
+            }
+        }
+
+        adapter.updateData(sortedList)
     }
 
     private fun lockAndExit() {

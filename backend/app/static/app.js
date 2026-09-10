@@ -3,7 +3,11 @@ let allTags = [];
 let currentRatingFilter = null;
 let currentTagFilter = "";
 let currentSearch = "";
+let currentSort = "title_asc";
 let modalSelectedRating = 0;
+
+let currentPlayingVideoId = null;
+let lastProgressSyncTime = 0;
 
 let wasWaitingForMount = false;
 let mountPollTimer = null;
@@ -146,6 +150,11 @@ function handleSearch() {
     renderGrid();
 }
 
+function handleSortSelect(val) {
+    currentSort = val;
+    renderGrid();
+}
+
 function renderGrid() {
     const grid = document.getElementById("videoGrid");
     
@@ -167,6 +176,35 @@ function renderGrid() {
             return matchTitle || matchFile || matchNotes || matchTags;
         }
         return true;
+    });
+
+    filtered.sort((a, b) => {
+        switch (currentSort) {
+            case "title_asc":
+                return (a.title || a.filename).localeCompare(b.title || b.filename);
+            case "title_desc":
+                return (b.title || b.filename).localeCompare(a.title || a.filename);
+            case "rating_desc":
+                return (b.rating || 0) - (a.rating || 0);
+            case "rating_asc":
+                return (a.rating || 0) - (b.rating || 0);
+            case "recent_desc":
+                return (new Date(b.created_at || 0) - new Date(a.created_at || 0)) || (b.id - a.id);
+            case "recent_asc":
+                return (new Date(a.created_at || 0) - new Date(b.created_at || 0)) || (a.id - b.id);
+            case "last_watched":
+                return new Date(b.last_watched_at || 0) - new Date(a.last_watched_at || 0);
+            case "duration_desc":
+                return (b.duration || 0) - (a.duration || 0);
+            case "duration_asc":
+                return (a.duration || 0) - (b.duration || 0);
+            case "progress_desc":
+                const pctA = a.duration > 0 ? (a.watched_seconds / a.duration) : 0;
+                const pctB = b.duration > 0 ? (b.watched_seconds / b.duration) : 0;
+                return pctB - pctA;
+            default:
+                return 0;
+        }
     });
 
     if (filtered.length === 0) {
@@ -400,16 +438,86 @@ async function triggerScan() {
 function openPreview(videoId, title) {
     const modal = document.getElementById("videoModal");
     const video = document.getElementById("playerPreview");
-    document.getElementById("modalTitle").textContent = title;
+    currentPlayingVideoId = videoId;
+
+    const v = allVideos.find(x => x.id === videoId);
+    const resumeTime = (v && v.watched_seconds > 5 && v.duration > 0 && (v.watched_seconds / v.duration) < 0.95) ? v.watched_seconds : 0;
+
+    document.getElementById("modalTitle").textContent = title + (resumeTime > 0 ? ` (Resuming at ${formatDuration(resumeTime)})` : "");
     video.src = `/api/v1/videos/${videoId}/stream`;
     modal.classList.remove("hidden");
+
+    const onLoadedMetadata = () => {
+        if (resumeTime > 0) {
+            video.currentTime = resumeTime;
+        }
+        video.removeEventListener("loadedmetadata", onLoadedMetadata);
+    };
+    video.addEventListener("loadedmetadata", onLoadedMetadata);
+
+    video.ontimeupdate = handleVideoTimeUpdate;
+    video.onpause = () => syncCurrentPlaybackProgress(false);
+    video.onended = () => syncCurrentPlaybackProgress(true);
+
     video.play().catch(() => {});
 }
 
+function handleVideoTimeUpdate() {
+    const now = Date.now();
+    if (now - lastProgressSyncTime > 5000) { // Sync every 5 seconds
+        lastProgressSyncTime = now;
+        syncCurrentPlaybackProgress(false);
+    }
+}
+
+async function syncCurrentPlaybackProgress(completed = false) {
+    if (!currentPlayingVideoId) return;
+    const video = document.getElementById("playerPreview");
+    if (!video || isNaN(video.currentTime)) return;
+
+    const curSec = Math.round(video.currentTime);
+    const v = allVideos.find(x => x.id === currentPlayingVideoId);
+    if (v) {
+        v.watched_seconds = curSec;
+        if (completed) v.completed = 1;
+        updateCardProgress(v);
+    }
+
+    try {
+        await fetch(`/api/v1/videos/${currentPlayingVideoId}/progress`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                watched_seconds: curSec,
+                completed: completed
+            })
+        });
+    } catch (e) {
+        console.error("Failed to sync video progress", e);
+    }
+}
+
+function updateCardProgress(v) {
+    const card = document.getElementById(`card-${v.id}`);
+    if (!card) return;
+    const progressPct = v.duration > 0 ? Math.min(100, Math.round((v.watched_seconds / v.duration) * 100)) : 0;
+    const progBar = card.querySelector(".progress-fill");
+    if (progBar) progBar.style.width = `${progressPct}%`;
+    const timeLabel = card.querySelector(".time-label");
+    if (timeLabel) timeLabel.textContent = `${formatDuration(v.watched_seconds)} / ${formatDuration(v.duration)}`;
+}
+
 function closeModal(e) {
+    if (e && e.target && e.target.id !== "videoModal" && !e.target.classList.contains("modal-close")) return;
     const modal = document.getElementById("videoModal");
     const video = document.getElementById("playerPreview");
+
+    syncCurrentPlaybackProgress(false);
     video.pause();
+    video.ontimeupdate = null;
+    video.onpause = null;
+    video.onended = null;
     video.src = "";
+    currentPlayingVideoId = null;
     modal.classList.add("hidden");
 }

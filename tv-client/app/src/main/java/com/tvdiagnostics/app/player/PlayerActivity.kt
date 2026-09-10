@@ -27,6 +27,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class PlayerActivity : AppCompatActivity() {
 
@@ -93,10 +94,10 @@ class PlayerActivity : AppCompatActivity() {
         playerView.player = exoPlayer
 
         val mediaItem = MediaItem.fromUri(Uri.parse(streamUrl))
-        exoPlayer?.setMediaItem(mediaItem)
-
         if (startPositionMs > 0) {
-            exoPlayer?.seekTo(startPositionMs)
+            exoPlayer?.setMediaItem(mediaItem, startPositionMs)
+        } else {
+            exoPlayer?.setMediaItem(mediaItem)
         }
 
         exoPlayer?.prepare()
@@ -134,10 +135,17 @@ class PlayerActivity : AppCompatActivity() {
         progressSyncJob = CoroutineScope(Dispatchers.IO).launch {
             while (isActive) {
                 delay(10000) // Sync every 10 seconds
-                if (exoPlayer?.isPlaying == true) {
-                    val currentSec = (exoPlayer?.currentPosition ?: 0L) / 1000.0
-                    val video = videoItem ?: continue
-                    ApiClient.updateProgress(video.id, currentSec)
+                val (playing, currentSec, videoId) = withContext(Dispatchers.Main) {
+                    val p = exoPlayer
+                    val v = videoItem
+                    if (p != null && v != null) {
+                        Triple(p.isPlaying, p.currentPosition / 1000.0, v.id)
+                    } else {
+                        Triple(false, 0.0, -1)
+                    }
+                }
+                if (playing && videoId != -1) {
+                    ApiClient.updateProgress(videoId, currentSec)
                 }
             }
         }

@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="600dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/card_dark"
+    android:padding="24dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="⇅ Sort Videos"
+        android:textColor="@color/text_white"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <!-- 2-Column Grid of Sort Choices for Quick TV Remote Selection -->
+    <GridLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:columnCount="2"
+        android:rowCount="5"
+        android:useDefaultMargins="true"
+        android:alignmentMode="alignMargins"
+        android:layout_marginBottom="16dp">
+
+        <Button
+            android:id="@+id/btnSortTitleAsc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Title (A → Z)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortTitleDesc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Title (Z → A)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortRatingDesc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Rating (Highest)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortRatingAsc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Rating (Lowest)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortRecentDesc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Added (Newest)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortRecentAsc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Added (Oldest)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortDurationDesc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Duration (Longest)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortDurationAsc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Duration (Shortest)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortProgressDesc"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Watch Progress (%)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+        <Button
+            android:id="@+id/btnSortClose"
+            android:layout_width="0dp"
+            android:layout_height="44dp"
+            android:layout_columnWeight="1"
+            android:text="Cancel"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:focusable="true" />
+
+    </GridLayout>
+
+</LinearLayout>

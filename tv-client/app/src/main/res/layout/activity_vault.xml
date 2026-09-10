@@ -157,6 +157,20 @@
 
             </LinearLayout>
         </HorizontalScrollView>
+
+        <!-- D-pad focusable Sort Button -->
+        <Button
+            android:id="@+id/btnVaultSort"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:text="⇅ Title (A-Z)"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/accent_blue"
+            android:textSize="11sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:layout_marginStart="10dp"
+            android:focusable="true" />
     </LinearLayout>
 
     <!-- TV Grid View for Videos -->

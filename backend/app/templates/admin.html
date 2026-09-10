@@ -57,6 +57,23 @@
                     <option value="">All Tags</option>
                 </select>
             </div>
+
+            <!-- Sort Filter Dropdown -->
+            <div class="sort-filter-box">
+                <label for="sortSelect">Sort:</label>
+                <select id="sortSelect" onchange="handleSortSelect(this.value)">
+                    <option value="title_asc">Title (A → Z)</option>
+                    <option value="title_desc">Title (Z → A)</option>
+                    <option value="rating_desc">Rating (Highest)</option>
+                    <option value="rating_asc">Rating (Lowest)</option>
+                    <option value="recent_desc">Recently Added (Newest)</option>
+                    <option value="recent_asc">Recently Added (Oldest)</option>
+                    <option value="last_watched">Recently Watched</option>
+                    <option value="duration_desc">Duration (Longest)</option>
+                    <option value="duration_asc">Duration (Shortest)</option>
+                    <option value="progress_desc">Watch Progress (%)</option>
+                </select>
+            </div>
         </section>
 
         <!-- Notification Banner -->
