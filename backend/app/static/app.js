@@ -3,7 +3,7 @@ let allTags = [];
 let currentRatingFilter = null;
 let currentTagFilter = "";
 let currentSearch = "";
-let currentSort = "title_asc";
+let currentSort = "recent_desc";
 let modalSelectedRating = 0;
 
 let currentPlayingVideoId = null;
@@ -18,6 +18,21 @@ document.addEventListener("DOMContentLoaded", () => {
     checkMountStatus();
     // Periodic status heartbeat
     setInterval(checkMountStatus, 10000);
+
+    // Global listener to close tag dropdowns on click outside
+    document.addEventListener("click", (e) => {
+        const combobox = document.getElementById("tagCombobox");
+        const tagMenu = document.getElementById("tagDropdownMenu");
+        if (combobox && tagMenu && !combobox.contains(e.target)) {
+            tagMenu.classList.add("hidden");
+        }
+
+        const editWrap = document.querySelector(".tag-autocomplete-wrap");
+        const editMenu = document.getElementById("editTagsAutocomplete");
+        if (editWrap && editMenu && !editWrap.contains(e.target)) {
+            editMenu.classList.add("hidden");
+        }
+    });
 });
 
 async function checkMountStatus() {
@@ -87,17 +102,139 @@ async function loadTags() {
         const res = await fetch("/api/v1/tags");
         if (!res.ok) return;
         const data = await res.json();
-        allTags = data.map(item => typeof item === "string" ? item : (item.tag || "")).filter(Boolean);
+        // Support {tag: string, count: number}
+        allTags = data.map(item => {
+            if (typeof item === "string") return { tag: item, count: 1 };
+            return { tag: item.tag || "", count: item.count || 1 };
+        }).filter(t => t.tag && t.tag.trim());
         
-        const select = document.getElementById("tagSelect");
-        if (!select) return;
-
-        const currentVal = select.value;
-        select.innerHTML = `<option value="">All Tags</option>` + 
-            allTags.map(tag => `<option value="${escapeHtml(tag)}"${tag === currentVal ? " selected" : ""}>${escapeHtml(tag)}</option>`).join("");
+        // Render initial combobox menu if input exists
+        const input = document.getElementById("tagComboboxInput");
+        if (input && input.value.trim()) {
+            renderTagComboboxMenu(input.value.trim());
+        }
     } catch (e) {
         console.error("Failed to load tags", e);
     }
+}
+
+/* Tag Combobox Logic for Filter Bar (100+ tags support) */
+function handleTagComboboxInput(val) {
+    const clean = (val || "").trim();
+    const clearBtn = document.getElementById("tagClearBtn");
+    if (clearBtn) {
+        if (clean.length > 0) clearBtn.classList.remove("hidden");
+        else clearBtn.classList.add("hidden");
+    }
+    renderTagComboboxMenu(clean);
+    // If input was completely emptied, reset filter
+    if (clean === "" && currentTagFilter !== "") {
+        currentTagFilter = "";
+        renderGrid();
+    }
+}
+
+function handleTagComboboxFocus() {
+    const input = document.getElementById("tagComboboxInput");
+    renderTagComboboxMenu(input ? input.value.trim() : "");
+}
+
+function renderTagComboboxMenu(query) {
+    const menu = document.getElementById("tagDropdownMenu");
+    if (!menu) return;
+
+    let matches = allTags;
+    if (query) {
+        const qLower = query.toLowerCase();
+        matches = allTags.filter(t => t.tag.toLowerCase().startsWith(qLower));
+    }
+
+    if (matches.length === 0) {
+        menu.innerHTML = `<div class="tag-dropdown-empty">No tags starting with "${escapeHtml(query)}"</div>`;
+        menu.classList.remove("hidden");
+        return;
+    }
+
+    menu.innerHTML = matches.map(t => `
+        <div class="tag-dropdown-item ${t.tag.toLowerCase() === currentTagFilter.toLowerCase() ? 'active' : ''}" 
+             onmousedown="selectTagFromCombobox('${escapeHtml(t.tag)}')">
+            <span>#${escapeHtml(t.tag)}</span>
+            <span class="tag-dropdown-count">${t.count}</span>
+        </div>
+    `).join("");
+    menu.classList.remove("hidden");
+}
+
+function selectTagFromCombobox(tagName) {
+    const input = document.getElementById("tagComboboxInput");
+    const clearBtn = document.getElementById("tagClearBtn");
+    const menu = document.getElementById("tagDropdownMenu");
+
+    if (input) input.value = tagName;
+    if (clearBtn) clearBtn.classList.remove("hidden");
+    if (menu) menu.classList.add("hidden");
+
+    currentTagFilter = tagName.toLowerCase();
+    renderGrid();
+}
+
+function clearTagFilter() {
+    const input = document.getElementById("tagComboboxInput");
+    const clearBtn = document.getElementById("tagClearBtn");
+    const menu = document.getElementById("tagDropdownMenu");
+
+    if (input) input.value = "";
+    if (clearBtn) clearBtn.classList.add("hidden");
+    if (menu) menu.classList.add("hidden");
+
+    currentTagFilter = "";
+    renderGrid();
+}
+
+function filterByTag(tag) {
+    selectTagFromCombobox(tag);
+}
+
+/* Autocomplete in Edit Modal for #editTags */
+function handleEditTagsInput(val) {
+    const menu = document.getElementById("editTagsAutocomplete");
+    if (!menu) return;
+
+    // Get current token being typed after last comma
+    const parts = val.split(",");
+    const currentToken = parts[parts.length - 1].trim().toLowerCase();
+
+    if (!currentToken) {
+        menu.classList.add("hidden");
+        return;
+    }
+
+    const matches = allTags.filter(t => t.tag.toLowerCase().startsWith(currentToken));
+    if (matches.length === 0) {
+        menu.classList.add("hidden");
+        return;
+    }
+
+    menu.innerHTML = matches.map(t => `
+        <div class="tag-dropdown-item" onmousedown="insertEditTag('${escapeHtml(t.tag)}')">
+            <span>#${escapeHtml(t.tag)}</span>
+            <span class="tag-dropdown-count">${t.count}</span>
+        </div>
+    `).join("");
+    menu.classList.remove("hidden");
+}
+
+function insertEditTag(tagName) {
+    const input = document.getElementById("editTags");
+    const menu = document.getElementById("editTagsAutocomplete");
+    if (!input) return;
+
+    const parts = input.value.split(",").map(p => p.trim()).filter(Boolean);
+    if (parts.length > 0) parts.pop(); // Remove partial token
+    parts.push(tagName);
+    input.value = parts.join(", ") + ", ";
+    if (menu) menu.classList.add("hidden");
+    input.focus();
 }
 
 async function loadVideos() {
@@ -130,19 +267,6 @@ function setRatingFilter(rating, btn) {
     document.querySelectorAll(".filter-pills .pill").forEach(p => p.classList.remove("active"));
     btn.classList.add("active");
     renderGrid();
-}
-
-function handleTagSelect(tag) {
-    currentTagFilter = tag ? tag.trim().toLowerCase() : "";
-    renderGrid();
-}
-
-function filterByTag(tag) {
-    const select = document.getElementById("tagSelect");
-    if (select) {
-        select.value = tag;
-        handleTagSelect(tag);
-    }
 }
 
 function handleSearch() {
@@ -224,9 +348,7 @@ function renderGrid() {
         const isRated = v.rating > 0;
 
         const tagList = (v.tags || "").split(",").map(t => t.trim()).filter(t => t.length > 0);
-        const tagsHtml = tagList.length > 0 
-            ? tagList.map(t => `<span class="tag-badge" onclick="event.stopPropagation(); filterByTag('${escapeHtml(t)}')">${escapeHtml(t)}</span>`).join("")
-            : "";
+        const primaryTag = tagList.length > 0 ? tagList[0] : null;
 
         const notesText = (v.notes || "").trim();
         const hasNotes = notesText.length > 0;
@@ -238,41 +360,50 @@ function renderGrid() {
                         ? `<img src="/api/v1/videos/${v.id}/thumbnail" alt="${escapeHtml(v.title)}" class="thumb-img" loading="lazy">`
                         : `<div class="thumb-placeholder">▶</div>`
                     }
+                    <div class="thumb-gradient"></div>
+
+                    <!-- Center Hover Play Overlay -->
+                    <div class="play-hover-overlay">
+                        <div class="play-hover-btn">▶</div>
+                    </div>
+
+                    <!-- Quick Hover Actions (Top Right) -->
+                    <div class="thumb-quick-actions" onclick="event.stopPropagation()">
+                        <button class="quick-action-btn" onclick="openEditModal(${v.id})" title="Edit Details, Notes & Tags">✎</button>
+                        <button class="quick-action-btn" onclick="resetVideoProgress(${v.id})" title="Reset Watch Progress">↺</button>
+                    </div>
+
+                    <!-- Corner Badges -->
                     <span class="res-badge">${resBadge}</span>
                     <span class="duration-badge">${formatDuration(v.duration)}</span>
-                </div>
-                
-                <div class="progress-bar-wrap">
-                    <div class="progress-bar-fill" style="width: ${progressPct}%;"></div>
+                    ${isRated ? `<span class="thumb-rating-badge">${circleSymbol}</span>` : ''}
+
+                    <!-- Integrated Bottom Progress Bar -->
+                    ${progressPct > 0 ? `
+                        <div class="card-progress-bar">
+                            <div class="card-progress-fill" style="width: ${progressPct}%;"></div>
+                        </div>
+                    ` : ''}
                 </div>
 
                 <div class="card-body">
-                    <h4 class="video-title" title="${escapeHtml(v.filename)}">${escapeHtml(v.title)}</h4>
+                    <h4 class="video-title" onclick="openPreview(${v.id}, '${escapeHtml(v.title)}')" title="${escapeHtml(v.filename)}">${escapeHtml(v.title)}</h4>
 
-                    <div class="card-meta-row">
-                        <span>${progressPct > 0 ? `${formatDuration(v.watched_seconds)} (${progressPct}%)` : 'Unplayed'}</span>
-                        <button class="circle-symbol-btn ${isRated ? 'rated' : 'unrated'}" 
-                                onclick="cycleRating(${v.id}, ${v.rating})" 
-                                title="Click to cycle rating (○ -> ● -> ●●)">
-                            ${circleSymbol}
-                        </button>
-                    </div>
-
-                    ${tagList.length > 0 ? `<div class="tags-row">${tagsHtml}</div>` : ''}
-
-                    <div class="notes-preview-wrap">
-                        <span class="notes-preview-label">Notes (click to edit):</span>
-                        <div class="notes-preview ${hasNotes ? '' : 'empty'}" 
-                             onclick="openEditModal(${v.id})" 
-                             title="Click to edit full notes and tags">
-                            ${hasNotes ? escapeHtml(notesText) : 'No notes added. Click to edit...'}
+                    <div class="card-meta-footer">
+                        <div class="meta-footer-left">
+                            <span class="time-label">${progressPct > 0 ? `${progressPct}% watched` : formatDuration(v.duration)}</span>
+                            ${primaryTag ? `<span class="pill-tag-sm" onclick="filterByTag('${escapeHtml(primaryTag)}')" title="Filter by #${escapeHtml(primaryTag)}">#${escapeHtml(primaryTag)}</span>` : ''}
+                            ${tagList.length > 1 ? `<span class="pill-tag-sm" onclick="openEditModal(${v.id})" title="All tags: ${escapeHtml(tagList.join(', '))}">+${tagList.length - 1}</span>` : ''}
                         </div>
-                    </div>
 
-                    <div class="card-actions">
-                        <button class="action-btn-sm" onclick="resetVideoProgress(${v.id})">↺ Reset</button>
-                        <button class="action-btn-sm" onclick="openEditModal(${v.id})">✎ Edit</button>
-                        <a href="/api/v1/videos/${v.id}/stream" target="_blank" class="action-btn-sm">Direct Stream</a>
+                        <div class="meta-footer-right">
+                            ${hasNotes ? `<span class="pill-notes-indicator" onclick="openEditModal(${v.id})" title="Notes: ${escapeHtml(notesText)}">📝</span>` : ''}
+                            <button class="circle-symbol-btn ${isRated ? 'rated' : 'unrated'}" 
+                                    onclick="cycleRating(${v.id}, ${v.rating})" 
+                                    title="Click to cycle rating (○ -> ● -> ●●)">
+                                ${circleSymbol}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -501,10 +632,24 @@ function updateCardProgress(v) {
     const card = document.getElementById(`card-${v.id}`);
     if (!card) return;
     const progressPct = v.duration > 0 ? Math.min(100, Math.round((v.watched_seconds / v.duration) * 100)) : 0;
-    const progBar = card.querySelector(".progress-fill");
-    if (progBar) progBar.style.width = `${progressPct}%`;
+    
+    let progFill = card.querySelector(".card-progress-fill");
+    if (!progFill && progressPct > 0) {
+        const thumbContainer = card.querySelector(".thumb-container");
+        if (thumbContainer) {
+            const bar = document.createElement("div");
+            bar.className = "card-progress-bar";
+            bar.innerHTML = `<div class="card-progress-fill" style="width: ${progressPct}%;"></div>`;
+            thumbContainer.appendChild(bar);
+        }
+    } else if (progFill) {
+        progFill.style.width = `${progressPct}%`;
+    }
+
     const timeLabel = card.querySelector(".time-label");
-    if (timeLabel) timeLabel.textContent = `${formatDuration(v.watched_seconds)} / ${formatDuration(v.duration)}`;
+    if (timeLabel) {
+        timeLabel.textContent = progressPct > 0 ? `${progressPct}% watched` : formatDuration(v.duration);
+    }
 }
 
 function closeModal(e) {

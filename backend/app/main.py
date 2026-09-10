@@ -106,16 +106,16 @@ async def list_videos(
     search: Optional[str] = None,
     rating: Optional[int] = None,
     tag: Optional[str] = None,
-    sort_by: str = "title"
+    sort_by: str = "recent_desc"
 ):
     """Lists all indexed videos with metadata, 60s thumbnails, notes, tags, circle ratings, and resume info."""
     videos = get_all_videos(search=search, rating=rating, tag=tag, sort_by=sort_by)
     return videos
 
 @app.get("/api/v1/tags")
-async def list_tags():
-    """Lists all unique video tags with usage count."""
-    return get_all_tags()
+async def list_tags(prefix: Optional[str] = None):
+    """Lists all unique video tags with usage count, optionally filtered by prefix."""
+    return get_all_tags(prefix=prefix)
 
 
 @app.get("/api/v1/videos/{video_id}")

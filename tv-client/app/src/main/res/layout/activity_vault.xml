@@ -130,40 +130,45 @@
             android:focusable="true"
             android:layout_marginEnd="16dp" />
 
-        <!-- Horizontally Scrollable Tag Filter Chips -->
-        <HorizontalScrollView
-            android:id="@+id/hsvTags"
+        <!-- D-pad focusable Tag Selector Button (Supports 100+ tags via TagFilterDialog) -->
+        <Button
+            android:id="@+id/btnVaultTags"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:text="🏷 Tags: All"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="11sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:focusable="true" />
+
+        <!-- Quick Clear Tag Button -->
+        <Button
+            android:id="@+id/btnClearTagFilter"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:text="✕ Clear Tag"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/danger_red"
+            android:textSize="11sp"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:layout_marginStart="6dp"
+            android:visibility="gone"
+            android:focusable="true" />
+
+        <View
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:scrollbars="none">
+            android:layout_height="0dp"
+            android:layout_weight="1" />
 
-            <LinearLayout
-                android:id="@+id/layoutTagChips"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
-
-                <Button
-                    android:id="@+id/btnTagAll"
-                    android:layout_width="wrap_content"
-                    android:layout_height="34dp"
-                    android:text="@string/tag_all"
-                    android:background="@drawable/btn_tv_focus"
-                    android:textColor="@color/text_white"
-                    android:textSize="11sp"
-                    android:layout_marginEnd="6dp" />
-
-            </LinearLayout>
-        </HorizontalScrollView>
-
-        <!-- D-pad focusable Sort Button -->
+        <!-- D-pad focusable Sort Button (Default: Added Newest) -->
         <Button
             android:id="@+id/btnVaultSort"
             android:layout_width="wrap_content"
             android:layout_height="38dp"
-            android:text="⇅ Title (A-Z)"
+            android:text="⇅ Added (Newest)"
             android:background="@drawable/btn_tv_focus"
             android:textColor="@color/accent_blue"
             android:textSize="11sp"

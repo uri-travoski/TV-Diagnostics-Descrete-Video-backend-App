@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="720dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/card_dark"
+    android:padding="20dp">
+
+    <!-- Header Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🏷 Select Tag"
+            android:textColor="@color/text_white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnTagResetAll"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="Show All Tags"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/accent_blue"
+            android:textSize="11sp"
+            android:focusable="true"
+            android:layout_marginEnd="8dp" />
+
+        <Button
+            android:id="@+id/btnTagClose"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="✕ Close"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- Search / Letter Typing Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="10dp">
+
+        <EditText
+            android:id="@+id/etTagFilterSearch"
+            android:layout_width="0dp"
+            android:layout_height="38dp"
+            android:layout_weight="1"
+            android:background="@drawable/btn_tv_focus"
+            android:hint="Type first letter to filter tags..."
+            android:textColorHint="#64748B"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:singleLine="true"
+            android:inputType="text"
+            android:imeOptions="actionSearch"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- Alphabet Quick-Jump Bar (A-Z) -->
+    <HorizontalScrollView
+        android:id="@+id/hsvAlphabet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:layout_marginBottom="12dp">
+
+        <LinearLayout
+            android:id="@+id/layoutAlphabetPills"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical" />
+    </HorizontalScrollView>
+
+    <!-- Scrollable Tags Grid (3 Columns) -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="240dp"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <GridLayout
+                android:id="@+id/gridTagsContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:columnCount="3"
+                android:useDefaultMargins="true"
+                android:alignmentMode="alignMargins" />
+
+            <TextView
+                android:id="@+id/tvNoTagsFound"
+                android:layout_width="match_parent"
+                android:layout_height="80dp"
+                android:gravity="center"
+                android:text="No tags starting with this letter."
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:visibility="gone" />
+        </LinearLayout>
+    </ScrollView>
+
+</LinearLayout>

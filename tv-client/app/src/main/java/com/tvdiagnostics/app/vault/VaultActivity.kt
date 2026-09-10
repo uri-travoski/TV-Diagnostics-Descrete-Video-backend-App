@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.KeyEvent
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
@@ -30,8 +31,8 @@ class VaultActivity : AppCompatActivity() {
     private lateinit var rvVideos: RecyclerView
     private lateinit var adapter: VideoAdapter
     private lateinit var etSearch: EditText
-    private lateinit var layoutTagChips: LinearLayout
-    private lateinit var btnTagAll: Button
+    private lateinit var btnVaultTags: Button
+    private lateinit var btnClearTagFilter: Button
     private lateinit var btnVaultSort: Button
 
     private var allVideos = listOf<VideoItem>()
@@ -42,9 +43,7 @@ class VaultActivity : AppCompatActivity() {
     private var isContinueFilter: Boolean = false
     private var selectedTag: String? = null
     private var searchQuery: String = ""
-    private var currentSort: SortOption = SortOption.TITLE_ASC
-
-    private val tagButtons = mutableListOf<Button>()
+    private var currentSort: SortOption = SortOption.RECENT_DESC
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,12 +83,21 @@ class VaultActivity : AppCompatActivity() {
         rvVideos.adapter = adapter
 
         etSearch = findViewById(R.id.etVaultSearch)
-        layoutTagChips = findViewById(R.id.layoutTagChips)
-        btnTagAll = findViewById(R.id.btnTagAll)
+        btnVaultTags = findViewById(R.id.btnVaultTags)
+        btnClearTagFilter = findViewById(R.id.btnClearTagFilter)
 
-        btnTagAll.setOnClickListener {
+        btnVaultTags.setOnClickListener {
+            val dialog = TagFilterDialog(this, allTags, selectedTag) { tag ->
+                selectedTag = tag
+                updateTagButtonUi()
+                applyFilters()
+            }
+            dialog.show()
+        }
+
+        btnClearTagFilter.setOnClickListener {
             selectedTag = null
-            highlightActiveTagButton(btnTagAll)
+            updateTagButtonUi()
             applyFilters()
         }
 
@@ -197,61 +205,24 @@ class VaultActivity : AppCompatActivity() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 allTags = ApiClient.fetchTags()
-                populateTagChips()
+                updateTagButtonUi()
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    private fun populateTagChips() {
-        // Keep btnTagAll, remove existing dynamic tag buttons if any
-        if (layoutTagChips.childCount > 1) {
-            layoutTagChips.removeViews(1, layoutTagChips.childCount - 1)
-        }
-        tagButtons.clear()
-        tagButtons.add(btnTagAll)
-
-        for (tagItem in allTags) {
-            val tagName = tagItem.tag.trim()
-            if (tagName.isEmpty()) continue
-
-            val btn = Button(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    resources.getDimensionPixelSize(R.dimen.tag_button_height)
-                ).apply {
-                    marginEnd = resources.getDimensionPixelSize(R.dimen.tag_button_margin_end)
-                }
-                text = "$tagName (${tagItem.count})"
-                setBackgroundResource(R.drawable.btn_tv_focus)
-                setTextColor(ContextCompat.getColor(context, R.color.text_white))
-                textSize = 11f
-                isFocusable = true
-                isClickable = true
-
-                setOnClickListener {
-                    selectedTag = tagName
-                    highlightActiveTagButton(this)
-                    applyFilters()
-                }
-            }
-
-            tagButtons.add(btn)
-            layoutTagChips.addView(btn)
-        }
-
-        val activeBtn = selectedTag?.let { tag -> tagButtons.find { it.text.startsWith(tag) } } ?: btnTagAll
-        highlightActiveTagButton(activeBtn)
-    }
-
-    private fun highlightActiveTagButton(active: Button) {
-        for (btn in tagButtons) {
-            if (btn == active) {
-                btn.setTextColor(ContextCompat.getColor(this, R.color.accent_blue))
-            } else {
-                btn.setTextColor(ContextCompat.getColor(this, R.color.text_white))
-            }
+    private fun updateTagButtonUi() {
+        if (selectedTag != null) {
+            val match = allTags.find { it.tag.equals(selectedTag, ignoreCase = true) }
+            val countStr = match?.let { " (${it.count})" } ?: ""
+            btnVaultTags.text = "🏷 #${selectedTag}$countStr"
+            btnVaultTags.setTextColor(ContextCompat.getColor(this, R.color.accent_blue))
+            btnClearTagFilter.visibility = View.VISIBLE
+        } else {
+            btnVaultTags.text = "🏷 Tags: All"
+            btnVaultTags.setTextColor(ContextCompat.getColor(this, R.color.text_white))
+            btnClearTagFilter.visibility = View.GONE
         }
     }
 

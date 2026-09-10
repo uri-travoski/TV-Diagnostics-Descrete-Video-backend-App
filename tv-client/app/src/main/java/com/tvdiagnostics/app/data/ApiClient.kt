@@ -73,9 +73,14 @@ object ApiClient {
         }
     }
 
-    suspend fun fetchTags(): List<TagItem> = withContext(Dispatchers.IO) {
+    suspend fun fetchTags(prefix: String? = null): List<TagItem> = withContext(Dispatchers.IO) {
         try {
-            val req = Request.Builder().url("${getBaseUrl()}/api/v1/tags").get().build()
+            val url = if (!prefix.isNullOrBlank()) {
+                "${getBaseUrl()}/api/v1/tags?prefix=" + URLEncoder.encode(prefix.trim(), "UTF-8")
+            } else {
+                "${getBaseUrl()}/api/v1/tags"
+            }
+            val req = Request.Builder().url(url).get().build()
             val response = client.newCall(req).execute()
             if (!response.isSuccessful) return@withContext emptyList()
 

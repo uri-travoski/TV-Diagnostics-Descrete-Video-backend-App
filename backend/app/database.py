@@ -275,7 +275,7 @@ def get_all_videos(
     search: Optional[str] = None,
     rating: Optional[int] = None,
     tag: Optional[str] = None,
-    sort_by: str = "title"
+    sort_by: str = "recent_desc"
 ) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
@@ -313,7 +313,7 @@ def get_all_videos(
         "rating_asc": "rating ASC",
         "progress_desc": "watched_seconds DESC"
     }
-    order_clause = sort_options.get(sort_by, "title ASC")
+    order_clause = sort_options.get(sort_by, "created_at DESC")
     query += f" ORDER BY {order_clause}"
     
     cursor.execute(query, params)
@@ -392,23 +392,31 @@ def reset_all_progress() -> int:
     conn.close()
     return count
 
-def get_all_tags() -> List[Dict[str, Any]]:
-    """Returns all unique tags with count of associated videos."""
+def get_all_tags(prefix: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Returns all unique tags with count of associated videos, optionally filtered by prefix."""
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT tags FROM videos WHERE tags != ''")
     rows = cursor.fetchall()
     conn.close()
     
+    clean_prefix = prefix.strip().lower() if prefix and prefix.strip() else None
+    
     tag_counts: Dict[str, int] = {}
     for row in rows:
         tags_str = row["tags"] if row["tags"] else ""
         for t in tags_str.split(","):
             clean = t.strip()
-            if clean:
-                tag_counts[clean] = tag_counts.get(clean, 0) + 1
+            if not clean:
+                continue
+            if clean_prefix and not clean.lower().startswith(clean_prefix):
+                continue
+            tag_counts[clean] = tag_counts.get(clean, 0) + 1
                 
-    return [{"tag": k, "count": v} for k, v in sorted(tag_counts.items(), key=lambda x: (-x[1], x[0]))]
+    # If prefix provided, sort alphabetically; otherwise by popularity then alphabetically
+    if clean_prefix:
+        return [{"tag": k, "count": v} for k, v in sorted(tag_counts.items(), key=lambda x: x[0].lower())]
+    return [{"tag": k, "count": v} for k, v in sorted(tag_counts.items(), key=lambda x: (-x[1], x[0].lower()))]
 
 def update_metadata(
     video_id: int,

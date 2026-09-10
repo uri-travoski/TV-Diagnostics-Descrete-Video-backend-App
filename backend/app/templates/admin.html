@@ -50,24 +50,26 @@
                 <button class="pill" onclick="setRatingFilter(2, this)">●● (<span id="countTwo">0</span>)</button>
             </div>
 
-            <!-- Tag Filter Dropdown -->
-            <div class="tag-filter-box">
-                <label for="tagSelect">Tag:</label>
-                <select id="tagSelect" onchange="handleTagSelect(this.value)">
-                    <option value="">All Tags</option>
-                </select>
+            <!-- Searchable Tag Filter Combobox for 100+ tags -->
+            <div class="tag-combobox-box" id="tagCombobox">
+                <label for="tagComboboxInput">Tag:</label>
+                <div class="combobox-input-wrap">
+                    <input type="text" id="tagComboboxInput" placeholder="Filter by tag (type letter...)" autocomplete="off" oninput="handleTagComboboxInput(this.value)" onfocus="handleTagComboboxFocus()">
+                    <button type="button" id="tagClearBtn" class="combobox-clear-btn hidden" onclick="clearTagFilter()" title="Clear tag filter">&times;</button>
+                    <div id="tagDropdownMenu" class="tag-dropdown-menu hidden"></div>
+                </div>
             </div>
 
-            <!-- Sort Filter Dropdown -->
+            <!-- Sort Filter Dropdown (Default: Recently Added) -->
             <div class="sort-filter-box">
                 <label for="sortSelect">Sort:</label>
                 <select id="sortSelect" onchange="handleSortSelect(this.value)">
+                    <option value="recent_desc" selected>Recently Added (Newest)</option>
+                    <option value="recent_asc">Recently Added (Oldest)</option>
                     <option value="title_asc">Title (A → Z)</option>
                     <option value="title_desc">Title (Z → A)</option>
                     <option value="rating_desc">Rating (Highest)</option>
                     <option value="rating_asc">Rating (Lowest)</option>
-                    <option value="recent_desc">Recently Added (Newest)</option>
-                    <option value="recent_asc">Recently Added (Oldest)</option>
                     <option value="last_watched">Recently Watched</option>
                     <option value="duration_desc">Duration (Longest)</option>
                     <option value="duration_asc">Duration (Shortest)</option>
@@ -109,9 +111,12 @@
                     <textarea id="editNotes" rows="6" placeholder="Enter custom notes, comments, or summaries..."></textarea>
                 </div>
 
-                <div class="form-group">
-                    <label for="editTags">Tags (comma-separated, e.g. nature, 4k, vacation):</label>
-                    <input type="text" id="editTags" placeholder="action, comedy, favorites">
+                <div class="form-group tag-input-group">
+                    <label for="editTags">Tags (comma-separated, e.g. action, comedy):</label>
+                    <div class="tag-autocomplete-wrap">
+                        <input type="text" id="editTags" placeholder="action, comedy, favorites" autocomplete="off" oninput="handleEditTagsInput(this.value)">
+                        <div id="editTagsAutocomplete" class="tag-autocomplete-menu hidden"></div>
+                    </div>
                     <div id="modalExistingTags" class="tag-chips-preview"></div>
                 </div>
 
