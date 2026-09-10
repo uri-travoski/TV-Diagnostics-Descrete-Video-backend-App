@@ -98,6 +98,15 @@
                 <input type="hidden" id="editVideoId">
 
                 <div class="form-group">
+                    <label for="editVideoTitle">Video Title & File Name:</label>
+                    <div class="filename-input-wrap">
+                        <input type="text" id="editVideoTitle" placeholder="Video Title" autocomplete="off" required>
+                        <span id="editVideoExt" class="file-ext-badge">.mp4</span>
+                    </div>
+                    <small class="form-hint">Changing this will rename the physical video file on your hard drive (file extension is kept intact).</small>
+                </div>
+
+                <div class="form-group">
                     <label>Rating:</label>
                     <div class="rating-picker">
                         <button type="button" class="rating-pick-btn" data-rating="0" onclick="selectModalRating(0)">○</button>

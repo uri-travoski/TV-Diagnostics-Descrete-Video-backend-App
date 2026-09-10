@@ -279,6 +279,25 @@ function handleSortSelect(val) {
     renderGrid();
 }
 
+/* Lucide SVG Icon Helper (Clean, Offline-Proof & Consistent) */
+function lucide(name, className = "lucide-icon", size = 16) {
+    const icons = {
+        play: `<polygon points="6 3 20 12 6 21 6 3"></polygon>`,
+        "play-fill": `<polygon points="6 3 20 12 6 21 6 3" fill="currentColor"></polygon>`,
+        edit: `<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>`,
+        pencil: `<line x1="18" y1="2" x2="22" y2="6"></line><path d="M7.5 20.5 19 9l-4-4L3.5 16.5 2 22z"></path>`,
+        "rotate-ccw": `<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path>`,
+        "file-text": `<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line>`,
+        tag: `<path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l6.58-6.58c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path>`,
+        clock: `<circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline>`,
+        film: `<rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M7 3v18"></path><path d="M3 7.5h4"></path><path d="M3 12h18"></path><path d="M3 16.5h4"></path><path d="M17 3v18"></path><path d="M17 7.5h4"></path><path d="M17 16.5h4"></path>`,
+        check: `<path d="M20 6 9 17l-5-5"></path>`,
+        x: `<path d="M18 6 6 18"></path><path d="m6 6 12 12"></path>`
+    };
+    const body = icons[name] || icons["play"];
+    return `<svg class="${className}" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`;
+}
+
 function renderGrid() {
     const grid = document.getElementById("videoGrid");
     
@@ -358,24 +377,33 @@ function renderGrid() {
                 <div class="thumb-container" onclick="openPreview(${v.id}, '${escapeHtml(v.title)}')">
                     ${hasThumb 
                         ? `<img src="/api/v1/videos/${v.id}/thumbnail" alt="${escapeHtml(v.title)}" class="thumb-img" loading="lazy">`
-                        : `<div class="thumb-placeholder">▶</div>`
+                        : `<div class="thumb-placeholder">${lucide('film', 'thumb-placeholder-icon', 32)}</div>`
                     }
                     <div class="thumb-gradient"></div>
 
                     <!-- Center Hover Play Overlay -->
                     <div class="play-hover-overlay">
-                        <div class="play-hover-btn">▶</div>
+                        <div class="play-hover-btn" title="Play Video">
+                            ${lucide('play-fill', 'icon-play-fill', 20)}
+                        </div>
                     </div>
 
                     <!-- Quick Hover Actions (Top Right) -->
                     <div class="thumb-quick-actions" onclick="event.stopPropagation()">
-                        <button class="quick-action-btn" onclick="openEditModal(${v.id})" title="Edit Details, Notes & Tags">✎</button>
-                        <button class="quick-action-btn" onclick="resetVideoProgress(${v.id})" title="Reset Watch Progress">↺</button>
+                        <button class="quick-action-btn" onclick="openEditModal(${v.id})" title="Rename & Edit Details">
+                            ${lucide('pencil', 'icon-quick', 13)}
+                        </button>
+                        <button class="quick-action-btn" onclick="resetVideoProgress(${v.id})" title="Reset Watch Progress">
+                            ${lucide('rotate-ccw', 'icon-quick', 13)}
+                        </button>
                     </div>
 
                     <!-- Corner Badges -->
                     <span class="res-badge">${resBadge}</span>
-                    <span class="duration-badge">${formatDuration(v.duration)}</span>
+                    <span class="duration-badge">
+                        ${lucide('clock', 'icon-clock-badge', 10)}
+                        <span>${formatDuration(v.duration)}</span>
+                    </span>
                     ${isRated ? `<span class="thumb-rating-badge">${circleSymbol}</span>` : ''}
 
                     <!-- Integrated Bottom Progress Bar -->
@@ -387,21 +415,28 @@ function renderGrid() {
                 </div>
 
                 <div class="card-body">
-                    <h4 class="video-title" onclick="openPreview(${v.id}, '${escapeHtml(v.title)}')" title="${escapeHtml(v.filename)}">${escapeHtml(v.title)}</h4>
+                    <h4 class="video-title" onclick="openPreview(${v.id}, '${escapeHtml(v.title)}')" title="File: ${escapeHtml(v.filename)}">${escapeHtml(v.title)}</h4>
 
                     <div class="card-meta-footer">
                         <div class="meta-footer-left">
                             <span class="time-label">${progressPct > 0 ? `${progressPct}% watched` : formatDuration(v.duration)}</span>
-                            ${primaryTag ? `<span class="pill-tag-sm" onclick="filterByTag('${escapeHtml(primaryTag)}')" title="Filter by #${escapeHtml(primaryTag)}">#${escapeHtml(primaryTag)}</span>` : ''}
+                            ${primaryTag ? `<span class="pill-tag-sm" onclick="filterByTag('${escapeHtml(primaryTag)}')" title="Filter by #${escapeHtml(primaryTag)}">${lucide('tag', 'icon-tag-pill', 10)} #${escapeHtml(primaryTag)}</span>` : ''}
                             ${tagList.length > 1 ? `<span class="pill-tag-sm" onclick="openEditModal(${v.id})" title="All tags: ${escapeHtml(tagList.join(', '))}">+${tagList.length - 1}</span>` : ''}
                         </div>
 
                         <div class="meta-footer-right">
-                            ${hasNotes ? `<span class="pill-notes-indicator" onclick="openEditModal(${v.id})" title="Notes: ${escapeHtml(notesText)}">📝</span>` : ''}
+                            ${hasNotes ? `
+                                <button class="pill-notes-btn active" onclick="openEditModal(${v.id})" title="Notes: ${escapeHtml(notesText)}">
+                                    ${lucide('file-text', 'icon-notes', 13)}
+                                </button>
+                            ` : ''}
                             <button class="circle-symbol-btn ${isRated ? 'rated' : 'unrated'}" 
                                     onclick="cycleRating(${v.id}, ${v.rating})" 
                                     title="Click to cycle rating (○ -> ● -> ●●)">
                                 ${circleSymbol}
+                            </button>
+                            <button class="card-action-icon-btn" onclick="openEditModal(${v.id})" title="Rename video / edit details">
+                                ${lucide('pencil', 'icon-pencil-sm', 12)}
                             </button>
                         </div>
                     </div>
@@ -422,7 +457,18 @@ function openEditModal(videoId) {
     if (!video) return;
 
     document.getElementById("editVideoId").value = video.id;
-    document.getElementById("editModalTitle").textContent = `Edit: ${video.title}`;
+    document.getElementById("editModalTitle").textContent = `Edit Video Details`;
+    document.getElementById("editVideoTitle").value = video.title || "";
+    
+    // Extract file extension to display in badge
+    let ext = "";
+    if (video.filename && video.filename.lastIndexOf(".") !== -1) {
+        ext = video.filename.substring(video.filename.lastIndexOf("."));
+    } else if (video.filepath && video.filepath.lastIndexOf(".") !== -1) {
+        ext = video.filepath.substring(video.filepath.lastIndexOf("."));
+    }
+    document.getElementById("editVideoExt").textContent = ext || "";
+
     document.getElementById("editNotes").value = video.notes || "";
     document.getElementById("editTags").value = video.tags || "";
 
@@ -457,6 +503,12 @@ async function saveEditModal() {
     const videoId = parseInt(document.getElementById("editVideoId").value, 10);
     if (!videoId) return;
 
+    const title = document.getElementById("editVideoTitle").value.trim();
+    if (!title) {
+        showAlert("Video title cannot be empty", "error");
+        return;
+    }
+
     const notes = document.getElementById("editNotes").value;
     const tags = document.getElementById("editTags").value;
     const rating = modalSelectedRating;
@@ -466,6 +518,7 @@ async function saveEditModal() {
             method: "POST",
             headers: {"Content-Type": "application/json"},
             body: JSON.stringify({
+                title: title,
                 notes: notes,
                 tags: tags,
                 rating: rating
@@ -473,19 +526,27 @@ async function saveEditModal() {
         });
 
         if (res.ok) {
+            const data = await res.json();
+            const updatedVideo = data.video;
             const v = allVideos.find(item => item.id === videoId);
             if (v) {
-                v.notes = notes;
-                v.tags = tags;
-                v.rating = rating;
+                if (updatedVideo) {
+                    Object.assign(v, updatedVideo);
+                } else {
+                    v.title = title;
+                    v.notes = notes;
+                    v.tags = tags;
+                    v.rating = rating;
+                }
             }
             updateCounts();
             renderGrid();
             await loadTags();
             document.getElementById("editModal").classList.add("hidden");
-            showAlert("Video details saved successfully", "success");
+            showAlert("Video details saved & file renamed on hard drive", "success");
         } else {
-            showAlert("Failed to save video details", "error");
+            const errData = await res.json().catch(() => ({}));
+            showAlert(errData.detail || "Failed to save video details", "error");
         }
     } catch (e) {
         showAlert("Save error: " + e.message, "error");

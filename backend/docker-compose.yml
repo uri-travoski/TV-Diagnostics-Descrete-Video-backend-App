@@ -19,7 +19,7 @@ services:
       - VIDEO_DIRS=/videos         # Mounted directory inside the container
     volumes:
       # Mount video folders here (replace ./sample_videos with your host/SMB video path)
-      - ./sample_videos:/videos:ro
+      - ./sample_videos:/videos
       
       # Persistent storage for metadata database, backups, and generated 60s thumbnails
       - ./data:/app/data

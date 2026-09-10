@@ -420,6 +420,10 @@ def get_all_tags(prefix: Optional[str] = None) -> List[Dict[str, Any]]:
 
 def update_metadata(
     video_id: int,
+    title: Optional[str] = None,
+    filename: Optional[str] = None,
+    filepath: Optional[str] = None,
+    thumbnail_path: Optional[str] = None,
     notes: Optional[str] = None,
     rating: Optional[int] = None,
     tags: Optional[str] = None
@@ -431,6 +435,18 @@ def update_metadata(
     updates = []
     params: List[Any] = []
     
+    if title is not None and title.strip():
+        updates.append("title = ?")
+        params.append(title.strip())
+    if filename is not None and filename.strip():
+        updates.append("filename = ?")
+        params.append(filename.strip())
+    if filepath is not None and filepath.strip():
+        updates.append("filepath = ?")
+        params.append(filepath.strip())
+    if thumbnail_path is not None and thumbnail_path.strip():
+        updates.append("thumbnail_path = ?")
+        params.append(thumbnail_path.strip())
     if notes is not None:
         updates.append("notes = ?")
         params.append(notes)

@@ -1,4 +1,7 @@
 import asyncio
+import re
+import shutil
+import hashlib
 from pathlib import Path
 from typing import Optional, List
 from contextlib import asynccontextmanager
@@ -11,7 +14,8 @@ from pydantic import BaseModel, Field
 
 from .config import (
     BASE_DIR, HOST, PORT, PIN_CODE, NOTES_PIN, AUTH_TOKEN,
-    VIDEO_DIRS, SCAN_ON_STARTUP, SCAN_INTERVAL_MINUTES, APP_VERSION
+    VIDEO_DIRS, SCAN_ON_STARTUP, SCAN_INTERVAL_MINUTES, APP_VERSION,
+    THUMBNAILS_DIR
 )
 from .database import (
     init_db, get_all_videos, get_video,
@@ -71,6 +75,7 @@ class ProgressUpdateRequest(BaseModel):
     completed: Optional[bool] = None
 
 class MetadataUpdateRequest(BaseModel):
+    title: Optional[str] = None
     notes: Optional[str] = None
     rating: Optional[int] = Field(default=None, ge=0, le=2)
     tags: Optional[str] = None
@@ -171,11 +176,83 @@ async def reset_all_videos_progress():
 
 @app.post("/api/v1/videos/{video_id}/metadata")
 async def update_video_metadata(video_id: int, req: MetadataUpdateRequest):
-    """Updates user notes, tags, and discreet circle rating (0: ○, 1: ●, 2: ●●)."""
-    success = update_metadata(video_id, notes=req.notes, rating=req.rating, tags=req.tags)
+    """Updates video title (renaming physical file on hard drive), notes, tags, and discreet circle rating."""
+    video = get_video(video_id)
+    if not video:
+        raise HTTPException(status_code=404, detail="Video not found")
+
+    new_title = req.title.strip() if req.title is not None else None
+    new_filename = None
+    new_filepath = None
+    new_thumbnail_path = None
+
+    if new_title and new_title != video["title"]:
+        # Strip illegal characters across Linux / Windows / Samba filesystems
+        safe_stem = re.sub(r'[\\/*?:"<>|]', '', new_title).strip('. ')
+        # Collapse whitespace
+        safe_stem = re.sub(r'\s+', ' ', safe_stem)
+        
+        if not safe_stem:
+            raise HTTPException(status_code=400, detail="Invalid video title or filename")
+
+        current_path = Path(video["filepath"])
+        ext = current_path.suffix # preserves original extension as is (e.g. .mp4)
+        target_filename = f"{safe_stem}{ext}"
+        target_path = current_path.parent / target_filename
+
+        # If path actually changed on disk
+        if target_path.resolve() != current_path.resolve():
+            if not current_path.exists():
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Original video file missing on disk at {current_path}. Is the storage drive mounted?"
+                )
+            if target_path.exists():
+                raise HTTPException(
+                    status_code=409, 
+                    detail=f"A file named '{target_filename}' already exists in this folder."
+                )
+
+            try:
+                # Rename the physical file on the hard drive
+                current_path.rename(target_path)
+            except OSError as err:
+                raise HTTPException(
+                    status_code=500, 
+                    detail=f"Failed to rename file on hard drive: {err.strerror}"
+                )
+
+            new_filename = target_filename
+            new_filepath = str(target_path.resolve())
+
+            # Update or migrate cached 60s thumbnail if exists
+            try:
+                old_thumb_str = video.get("thumbnail_path")
+                new_hash = hashlib.md5(str(target_path.resolve()).encode("utf-8")).hexdigest()
+                target_thumb = THUMBNAILS_DIR / f"{new_hash}.jpg"
+                if old_thumb_str:
+                    old_thumb = Path(old_thumb_str)
+                    if old_thumb.exists() and not target_thumb.exists():
+                        shutil.move(old_thumb, target_thumb)
+                new_thumbnail_path = str(target_thumb)
+            except Exception as thumb_err:
+                print(f"[Thumbnail Rename Warning] Could not migrate thumbnail: {thumb_err}")
+
+    success = update_metadata(
+        video_id,
+        title=new_title,
+        filename=new_filename,
+        filepath=new_filepath,
+        thumbnail_path=new_thumbnail_path,
+        notes=req.notes,
+        rating=req.rating,
+        tags=req.tags
+    )
     if not success:
-        raise HTTPException(status_code=404, detail="Video not found or no updates provided")
-    return {"success": True, "video_id": video_id}
+        raise HTTPException(status_code=400, detail="Video not found or no updates provided")
+
+    updated = get_video(video_id)
+    return {"success": True, "video_id": video_id, "video": updated}
 
 @app.post("/api/v1/scan")
 async def trigger_scan():
