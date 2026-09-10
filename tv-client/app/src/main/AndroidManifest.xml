@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- TV Hardware declarations (compatible with TV, Fire TV, and phones/boxes) -->
+    <uses-feature
+        android:name="android.software.leanback"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+
+    <application
+        android:name=".TVDiagnosticsApp"
+        android:allowBackup="true"
+        android:icon="@drawable/ic_launcher"
+        android:banner="@drawable/tv_banner"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.TVDiagnostics"
+        android:usesCleartextTraffic="true">
+
+        <!-- Decoy Diagnostics Activity: Primary Launcher for TV and Handhelds -->
+        <activity
+            android:name=".decoy.DecoyActivity"
+            android:exported="true"
+            android:screenOrientation="landscape"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <!-- Leanback TV Launcher for Android TV & Fire OS -->
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <!-- Standard Android Launcher for generic TV boxes -->
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- Screen Dead Pixel Test (Also acts as Panic Fallback) -->
+        <activity
+            android:name=".decoy.ScreenTestActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.TVDiagnostics.Fullscreen" />
+
+        <!-- Discreet Vault Library Activity -->
+        <activity
+            android:name=".vault.VaultActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:theme="@style/Theme.TVDiagnostics" />
+
+        <!-- Media3 ExoPlayer TV Activity -->
+        <activity
+            android:name=".player.PlayerActivity"
+            android:exported="false"
+            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
+            android:theme="@style/Theme.TVDiagnostics.Player" />
+
+    </application>
+
+</manifest>

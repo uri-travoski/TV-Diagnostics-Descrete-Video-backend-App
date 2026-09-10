@@ -1,0 +1,52 @@
+<resources>
+    <!-- App & Decoy Strings (Completely innocent terminology) -->
+    <string name="app_name">TV Diagnostics</string>
+    <string name="decoy_subtitle">Display &amp; Network Health Utility</string>
+    <string name="btn_screen_test">Panel / Dead Pixel Test</string>
+    <string name="btn_ping_test">Network Latency Test</string>
+    <string name="btn_server_code">Server Diagnostic Code</string>
+    <string name="btn_sys_info">Display Capabilities</string>
+    
+    <!-- Decoy Metric Labels -->
+    <string name="label_display_res">Display Resolution:</string>
+    <string name="label_refresh_rate">Refresh Rate:</string>
+    <string name="label_ip_addr">Device IP Address:</string>
+    <string name="label_gateway">Gateway / DNS:</string>
+    <string name="label_ping">Ping Response:</string>
+
+    <!-- 6-Digit PIN Dialog Strings -->
+    <string name="pin_dialog_title">Server Diagnostic Access</string>
+    <string name="pin_dialog_hint">Enter 6-Digit Code</string>
+    <string name="pin_btn_submit">Verify Code</string>
+    <string name="pin_btn_cancel">Cancel</string>
+    <string name="pin_invalid">Invalid diagnostic access code</string>
+
+    <!-- 4-Digit Notes PIN Dialog Strings -->
+    <string name="notes_pin_dialog_title">Notes Security Access</string>
+    <string name="notes_pin_dialog_hint">Enter 4-Digit PIN to Enable Notes</string>
+    <string name="notes_pin_invalid">Invalid 4-digit PIN</string>
+    <string name="settings_notes_title">Video Notes</string>
+    <string name="settings_notes_enabled">Notes Display: ON</string>
+    <string name="settings_notes_disabled">Notes Display: OFF</string>
+
+    <!-- Vault Strings -->
+    <string name="vault_title">Media Diagnostics</string>
+    <string name="category_all">All</string>
+    <string name="category_continue">Continue</string>
+    <string name="search_hint">Search title, tags...</string>
+    <string name="tag_all">All Tags</string>
+
+    <!-- Video Detail Strings -->
+    <string name="btn_play">Play</string>
+    <string name="btn_resume">Resume from %s</string>
+    <string name="btn_reset_progress">Reset Playback</string>
+    <string name="notes_header">Notes</string>
+    <string name="tags_header">Tags</string>
+    <string name="no_notes">No notes provided for this file.</string>
+    <string name="rating_label">Index Mark:</string>
+
+    <!-- Server Config -->
+    <string name="default_server_url">http://tv-diagnostics:8090</string>
+    <string name="btn_settings">Connection &amp; Options</string>
+    <string name="server_ip_prompt">Enter Backend Server Address (e.g. http://tv-diagnostics:8090):</string>
+</resources>

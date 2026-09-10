@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV System Diagnostics & Network Probe</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .decoy-container {
+            max-width: 650px;
+            margin: 60px auto;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+        .metric-label { color: #8892b0; }
+        .metric-val { font-family: monospace; font-weight: bold; color: #64ffda; }
+        .pin-auth {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px dashed var(--border-color);
+        }
+        .pin-input-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .pin-field {
+            flex: 1;
+            font-size: 16px;
+            letter-spacing: 4px;
+            text-align: center;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="decoy-container">
+        <div class="brand" style="margin-bottom: 20px;">
+            <span class="icon">📡</span>
+            <div class="brand-text">
+                <h2>TV Diagnostic Probe</h2>
+                <span class="subtitle">System Status & Local Network Node</span>
+            </div>
+        </div>
+
+        <div class="metric-row">
+            <span class="metric-label">Node Status</span>
+            <span class="metric-val" style="color: #4ade80;">ACTIVE / READY</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Interface Protocol</span>
+            <span class="metric-val">HTTP/1.1 (TCP/IP)</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Direct Stream Gateway</span>
+            <span class="metric-val">ONLINE (Port 8090)</span>
+        </div>
+        <div class="metric-row">
+            <span class="metric-label">Byte-Range Seeking</span>
+            <span class="metric-val">ENABLED (Partial 206)</span>
+        </div>
+
+        <div class="pin-auth">
+            <label for="pinCode" class="metric-label">Diagnostics Access Code (6 Digits):</label>
+            <div class="pin-input-group">
+                <input type="password" id="pinCode" class="pin-field" maxlength="6" placeholder="••••••" autocomplete="off">
+                <button class="btn btn-primary" onclick="verifyPin()">Access</button>
+            </div>
+            <div id="authError" style="color: #f87171; font-size: 13px; margin-top: 8px; display: none;">Invalid diagnostic access code</div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("pinCode").addEventListener("keyup", function(e) {
+            if (e.key === "Enter") verifyPin();
+        });
+
+        async function verifyPin() {
+            const pin = document.getElementById("pinCode").value;
+            const err = document.getElementById("authError");
+            try {
+                const res = await fetch("/api/v1/auth/verify", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ pin: pin })
+                });
+                const data = await res.json();
+                if (data.valid) {
+                    sessionStorage.setItem("tv_pin", pin);
+                    window.location.href = "/admin?pin=" + encodeURIComponent(pin);
+                } else {
+                    err.style.display = "block";
+                }
+            } catch (e) {
+                err.textContent = "Server error verifying code";
+                err.style.display = "block";
+            }
+        }
+    </script>
+</body>
+</html>

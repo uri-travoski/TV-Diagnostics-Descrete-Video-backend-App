@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="260dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:focusable="true"
+    android:clickable="true"
+    android:background="@drawable/btn_tv_focus"
+    android:padding="8dp"
+    android:layout_margin="10dp">
+
+    <!-- Thumbnail Container -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="138dp">
+
+        <ImageView
+            android:id="@+id/ivThumbnail"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:background="#050811" />
+
+        <TextView
+            android:id="@+id/tvDurationBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="6dp"
+            android:background="#CC000000"
+            android:paddingStart="6dp"
+            android:paddingEnd="6dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textColor="@color/text_white"
+            android:textSize="11sp"
+            android:text="00:00" />
+
+        <TextView
+            android:id="@+id/tvResBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|start"
+            android:layout_margin="6dp"
+            android:background="#CC1E293B"
+            android:paddingStart="5dp"
+            android:paddingEnd="5dp"
+            android:paddingTop="2dp"
+            android:paddingBottom="2dp"
+            android:textColor="@color/text_white"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:text="HD" />
+    </FrameLayout>
+
+    <!-- Progress Indicator Bar -->
+    <ProgressBar
+        android:id="@+id/pbWatchProgress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:max="100"
+        android:progress="0"
+        android:progressTint="@color/accent_blue"
+        android:progressBackgroundTint="#334155" />
+
+    <!-- Title & Discreet Rating Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/tvVideoTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:maxLines="2"
+            android:ellipsize="end"
+            android:textColor="@color/text_white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:text="Video Title" />
+
+        <!-- Discreet Circle Rating: ○, ●, or ●● -->
+        <TextView
+            android:id="@+id/tvCircleRating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:textColor="@color/circle_filled"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:text="○" />
+    </LinearLayout>
+
+    <!-- Tags Row (e.g. #sample #demo) -->
+    <TextView
+        android:id="@+id/tvTagsSnippet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="#93C5FD"
+        android:textSize="11sp"
+        android:visibility="gone"
+        android:layout_marginTop="3dp" />
+
+    <!-- Optional Notes Snippet (shown only when unlocked) -->
+    <TextView
+        android:id="@+id/tvNotesSnippet"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:textColor="@color/text_muted"
+        android:textSize="11sp"
+        android:visibility="gone"
+        android:layout_marginTop="3dp" />
+
+</LinearLayout>

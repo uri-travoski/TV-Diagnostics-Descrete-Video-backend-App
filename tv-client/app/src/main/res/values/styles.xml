@@ -1,0 +1,23 @@
+<resources>
+    <style name="PinBoxStyle">
+        <item name="android:layout_width">34dp</item>
+        <item name="android:layout_height">40dp</item>
+        <item name="android:layout_margin">3dp</item>
+        <item name="android:background">@color/bg_dark</item>
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/accent_blue</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="PinKeyStyle">
+        <item name="android:layout_width">62dp</item>
+        <item name="android:layout_height">44dp</item>
+        <item name="android:layout_margin">3dp</item>
+        <item name="android:background">@drawable/btn_tv_focus</item>
+        <item name="android:textColor">@color/text_white</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:focusable">true</item>
+    </style>
+</resources>

@@ -1,0 +1,28 @@
+FROM eclipse-temurin:17-jdk-jammy
+
+ENV ANDROID_SDK_ROOT=/opt/android-sdk
+ENV ANDROID_HOME=/opt/android-sdk
+ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/platform-tools
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    wget \
+    unzip \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Android command-line tools
+RUN mkdir -p ${ANDROID_SDK_ROOT}/cmdline-tools \
+    && wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O /tmp/cmdline-tools.zip \
+    && unzip -q /tmp/cmdline-tools.zip -d ${ANDROID_SDK_ROOT}/cmdline-tools \
+    && mv ${ANDROID_SDK_ROOT}/cmdline-tools/cmdline-tools ${ANDROID_SDK_ROOT}/cmdline-tools/latest \
+    && rm /tmp/cmdline-tools.zip
+
+# Accept licenses and install platform tools / compileSdk 34
+RUN yes | sdkmanager --licenses > /dev/null \
+    && sdkmanager "platforms;android-34" "build-tools;34.0.0"
+
+WORKDIR /project
+COPY . .
+
+# Build APK and copy to output volume /dist
+CMD ./gradlew assembleDebug --no-daemon && mkdir -p /dist && cp app/build/outputs/apk/debug/*.apk /dist/tv-diagnostics.apk

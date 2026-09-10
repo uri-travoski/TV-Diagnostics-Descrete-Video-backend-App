@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal"
+    android:background="@color/bg_dark"
+    android:padding="36dp">
+
+    <!-- Left Side: Diagnostics Menu -->
+    <LinearLayout
+        android:layout_width="360dp"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textColor="@color/text_white"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/decoy_subtitle"
+            android:textColor="@color/text_muted"
+            android:textSize="14sp"
+            android:layout_marginBottom="28dp" />
+
+        <!-- Diagnostic Actions with D-pad Focus -->
+        <Button
+            android:id="@+id/btnScreenTest"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/btn_screen_test"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:focusable="true"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnPingTest"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/btn_ping_test"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:focusable="true"
+            android:layout_marginBottom="12dp" />
+
+        <!-- The Secret Trigger Button disguised as "Server Diagnostic Code" -->
+        <Button
+            android:id="@+id/btnServerCode"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/btn_server_code"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:focusable="true"
+            android:layout_marginBottom="12dp" />
+
+        <Button
+            android:id="@+id/btnSettings"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="@string/btn_settings"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_muted"
+            android:focusable="true"
+            android:layout_marginTop="16dp" />
+    </LinearLayout>
+
+
+    <!-- Right Side: System & Network Telemetry Panel -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:layout_marginStart="40dp"
+        android:orientation="vertical"
+        android:background="@color/card_dark"
+        android:padding="28dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="System Diagnostics Telemetry"
+            android:textColor="@color/accent_blue"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="20dp" />
+
+        <!-- Display Specs -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="14dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_display_res"
+                android:textColor="@color/text_muted" />
+            <TextView
+                android:id="@+id/tvDisplayRes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="1920 x 1080 (Landscape)"
+                android:textColor="@color/text_white"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="14dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_refresh_rate"
+                android:textColor="@color/text_muted" />
+            <TextView
+                android:id="@+id/tvRefreshRate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="60.00 Hz"
+                android:textColor="@color/text_white"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <!-- Network Specs -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="14dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_ip_addr"
+                android:textColor="@color/text_muted" />
+            <TextView
+                android:id="@+id/tvIpAddr"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Detecting..."
+                android:textColor="@color/accent_green"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="14dp">
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/label_ping"
+                android:textColor="@color/text_muted" />
+            <TextView
+                android:id="@+id/tvPingStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Ready"
+                android:textColor="@color/text_white" />
+        </LinearLayout>
+
+        <!-- Terminal / Telemetry Log View -->
+        <TextView
+            android:id="@+id/tvLogOutput"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="16dp"
+            android:background="#050811"
+            android:padding="12dp"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textColor="#4ADE80"
+            android:text="[System Probe Initialized]\nInterface: wlan0 / eth0\nDirect Stream Support: OK\nReady for diagnostics scan." />
+
+    </LinearLayout>
+
+</LinearLayout>

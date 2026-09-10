@@ -1,0 +1,28 @@
+services:
+  tv-diagnostics-backend:
+    image: tv-diagnostics-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tv-diagnostics-backend
+
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - PIN_CODE=123456            # 6-digit numeric PIN used to unlock Vault on TV
+      - NOTES_PIN=1234             # 4-digit numeric PIN used to unlock Notes on TV app
+      - PORT=8090
+      - SCAN_ON_STARTUP=true
+      - SCAN_INTERVAL_MINUTES=30
+      - MOUNT_POLL_INTERVAL_SECONDS=5 # Poll interval while waiting for SMB drive to mount
+      - VIDEO_DIRS=/videos         # Mounted directory inside the container
+
+
+    volumes:
+      # Mount video folders here (mounts sample_videos by default for testing, replace with host/SMB path)
+      - ./sample_videos:/videos:ro
+      
+      # Persistent storage for metadata database and generated 60s thumbnails
+      - ./data:/app/data
+

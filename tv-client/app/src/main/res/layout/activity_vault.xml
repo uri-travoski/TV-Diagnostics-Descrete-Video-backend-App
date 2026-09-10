@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_dark"
+    android:paddingStart="28dp"
+    android:paddingEnd="28dp"
+    android:paddingTop="16dp">
+
+    <!-- Top Action & Rating Filter Bar -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/vault_title"
+            android:textColor="@color/text_white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <!-- Symbol-Only Rating Filters (D-pad focusable) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="horizontal"
+            android:layout_marginStart="24dp">
+
+            <Button
+                android:id="@+id/filterAll"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="@string/category_all"
+                android:background="@drawable/btn_tv_focus"
+                android:textColor="@color/text_white"
+                android:textSize="12sp"
+                android:layout_marginEnd="6dp" />
+
+            <Button
+                android:id="@+id/filterContinue"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="@string/category_continue"
+                android:background="@drawable/btn_tv_focus"
+                android:textColor="@color/text_white"
+                android:textSize="12sp"
+                android:layout_marginEnd="6dp" />
+
+            <Button
+                android:id="@+id/filterLevel2"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="●●"
+                android:background="@drawable/btn_tv_focus"
+                android:textColor="@color/circle_filled"
+                android:textSize="14sp"
+                android:layout_marginEnd="6dp" />
+
+            <Button
+                android:id="@+id/filterLevel1"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="●"
+                android:background="@drawable/btn_tv_focus"
+                android:textColor="@color/circle_filled"
+                android:textSize="14sp"
+                android:layout_marginEnd="6dp" />
+
+            <Button
+                android:id="@+id/filterUnrated"
+                android:layout_width="wrap_content"
+                android:layout_height="38dp"
+                android:text="○"
+                android:background="@drawable/btn_tv_focus"
+                android:textColor="@color/circle_empty"
+                android:textSize="14sp"
+                android:layout_marginEnd="6dp" />
+        </LinearLayout>
+
+        <!-- Options / Settings Button -->
+        <Button
+            android:id="@+id/btnVaultSettings"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:text="⚙ Settings"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:layout_marginEnd="8dp" />
+
+        <!-- Lock / Revert Button -->
+        <Button
+            android:id="@+id/btnLockVault"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:text="🔒 Revert to Decoy"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/danger_red"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Search & Tag Filter Bar (Row 2) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <!-- D-pad focusable Search Input -->
+        <EditText
+            android:id="@+id/etVaultSearch"
+            android:layout_width="260dp"
+            android:layout_height="38dp"
+            android:background="@drawable/btn_tv_focus"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:hint="@string/search_hint"
+            android:textColorHint="#475569"
+            android:textColor="@color/text_white"
+            android:textSize="12sp"
+            android:imeOptions="actionSearch"
+            android:inputType="text"
+            android:focusable="true"
+            android:layout_marginEnd="16dp" />
+
+        <!-- Horizontally Scrollable Tag Filter Chips -->
+        <HorizontalScrollView
+            android:id="@+id/hsvTags"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/layoutTagChips"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <Button
+                    android:id="@+id/btnTagAll"
+                    android:layout_width="wrap_content"
+                    android:layout_height="34dp"
+                    android:text="@string/tag_all"
+                    android:background="@drawable/btn_tv_focus"
+                    android:textColor="@color/text_white"
+                    android:textSize="11sp"
+                    android:layout_marginEnd="6dp" />
+
+            </LinearLayout>
+        </HorizontalScrollView>
+    </LinearLayout>
+
+    <!-- TV Grid View for Videos -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvVideoGrid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="24dp" />
+
+</LinearLayout>

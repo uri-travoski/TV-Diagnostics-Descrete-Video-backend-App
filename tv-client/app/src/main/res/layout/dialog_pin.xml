@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="600dp"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:background="@color/card_dark"
+    android:paddingStart="24dp"
+    android:paddingEnd="24dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp"
+    android:gravity="center_vertical">
+
+    <!-- Left Column: Title, Subtitle, 6-Digit Display, Error, Cancel -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:paddingEnd="16dp"
+        android:gravity="start|center_vertical">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/pin_dialog_title"
+            android:textColor="@color/text_white"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvPinSubtitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/pin_dialog_hint"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:layout_marginBottom="12dp" />
+
+        <!-- 6-Digit Display Indicators -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="10dp">
+
+            <TextView android:id="@+id/pinBox1" style="@style/PinBoxStyle" />
+            <TextView android:id="@+id/pinBox2" style="@style/PinBoxStyle" />
+            <TextView android:id="@+id/pinBox3" style="@style/PinBoxStyle" />
+            <TextView android:id="@+id/pinBox4" style="@style/PinBoxStyle" />
+            <TextView android:id="@+id/pinBox5" style="@style/PinBoxStyle" />
+            <TextView android:id="@+id/pinBox6" style="@style/PinBoxStyle" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvPinError"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/pin_invalid"
+            android:textColor="@color/danger_red"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:layout_marginBottom="10dp" />
+
+        <Button
+            android:id="@+id/btnPinCancel"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="@string/pin_btn_cancel"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_muted"
+            android:textSize="11sp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:focusable="true" />
+    </LinearLayout>
+
+    <!-- Right Column: On-screen TV Numeric Keypad (D-pad navigable) -->
+    <GridLayout
+        android:id="@+id/numPadGrid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="3"
+        android:rowCount="4"
+        android:layout_gravity="center">
+
+        <Button android:id="@+id/btnKey1" style="@style/PinKeyStyle" android:text="1" />
+        <Button android:id="@+id/btnKey2" style="@style/PinKeyStyle" android:text="2" />
+        <Button android:id="@+id/btnKey3" style="@style/PinKeyStyle" android:text="3" />
+
+        <Button android:id="@+id/btnKey4" style="@style/PinKeyStyle" android:text="4" />
+        <Button android:id="@+id/btnKey5" style="@style/PinKeyStyle" android:text="5" />
+        <Button android:id="@+id/btnKey6" style="@style/PinKeyStyle" android:text="6" />
+
+        <Button android:id="@+id/btnKey7" style="@style/PinKeyStyle" android:text="7" />
+        <Button android:id="@+id/btnKey8" style="@style/PinKeyStyle" android:text="8" />
+        <Button android:id="@+id/btnKey9" style="@style/PinKeyStyle" android:text="9" />
+
+        <!-- Row 4: DEL (Backspace), 0, and OK (Submit) -->
+        <Button android:id="@+id/btnKeyBack" style="@style/PinKeyStyle" android:text="DEL" />
+        <Button android:id="@+id/btnKey0" style="@style/PinKeyStyle" android:text="0" />
+        <Button android:id="@+id/btnKeySubmit" style="@style/PinKeyStyle" android:text="OK" />
+    </GridLayout>
+
+</LinearLayout>

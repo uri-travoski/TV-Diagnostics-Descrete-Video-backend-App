@@ -1,0 +1,47 @@
+# Environment & Secrets (NEVER COMMIT)
+*.env
+*.env.*
+.env
+backend/.env
+!*.env.example
+!**/.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+
+# Databases & Backups
+backend/data/db/*.db
+backend/data/db/*.db-wal
+backend/data/db/*.db-shm
+backend/data/db/backups/*
+!backend/data/db/.gitkeep
+
+# Generated Thumbnails
+backend/data/thumbnails/*
+!backend/data/thumbnails/.gitkeep
+
+# Android Build & Gradle
+tv-client/.gradle/
+tv-client/build/
+tv-client/*/build/
+tv-client/app/build/
+tv-client/local.properties
+tv-client/.idea/
+tv-client/*.iml
+tv-client/*/*.iml
+tv-client/.cxx/
+tv-client/captures/
+.externalNativeBuild/
+
+# Editors & OS
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Media Manager — Desktop Console</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header class="app-header">
+        <div class="brand">
+            <span class="icon">🎬</span>
+            <div class="brand-text">
+                <h1>TV Media Manager</h1>
+                <span class="subtitle">Media Library, Tags & Metadata Management Console</span>
+            </div>
+        </div>
+        <div class="header-actions">
+            <span id="storageBadge" class="badge badge-ready">🟢 Storage: Ready</span>
+            <button id="btnScan" class="btn btn-primary" onclick="triggerScan()">
+                <span class="btn-icon">↻</span> Rescan Media
+            </button>
+            <button id="btnResetAll" class="btn btn-secondary" onclick="resetAllPlayback()">
+                Reset All Progress
+            </button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- SMB Mount Waiting Banner -->
+        <div id="smbMountNotice" class="mount-notice hidden">
+            <span class="notice-icon">⏳</span>
+            <div class="notice-content">
+                <strong>Waiting for SMB hard drive mount...</strong>
+                <p>The media folder is not available yet (e.g. host OS is still mounting the network drive). The server will automatically detect and scan it as soon as it mounts. Checking every 5 seconds.</p>
+            </div>
+        </div>
+
+        <!-- Desktop Control Bar -->
+        <section class="control-bar">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search title, filename, notes, tags..." oninput="handleSearch()">
+            </div>
+
+            <!-- Symbol-Only Rating Filters -->
+            <div class="filter-pills">
+                <button class="pill active" onclick="setRatingFilter(null, this)">All (<span id="countAll">0</span>)</button>
+                <button class="pill" onclick="setRatingFilter(0, this)">○ (<span id="countUnrated">0</span>)</button>
+                <button class="pill" onclick="setRatingFilter(1, this)">● (<span id="countOne">0</span>)</button>
+                <button class="pill" onclick="setRatingFilter(2, this)">●● (<span id="countTwo">0</span>)</button>
+            </div>
+
+            <!-- Tag Filter Dropdown -->
+            <div class="tag-filter-box">
+                <label for="tagSelect">Tag:</label>
+                <select id="tagSelect" onchange="handleTagSelect(this.value)">
+                    <option value="">All Tags</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Notification Banner -->
+        <div id="statusAlert" class="status-alert hidden"></div>
+
+        <!-- Video Grid (60% smaller compact desktop cards) -->
+        <section id="videoGrid" class="video-grid">
+            <div class="empty-state">Loading video library...</div>
+        </section>
+    </main>
+
+    <!-- Edit Video Notes & Tags Modal -->
+    <div id="editModal" class="modal hidden" onclick="closeEditModal(event)">
+        <div class="modal-content edit-modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="editModalTitle">Edit Video Details</h3>
+                <button class="modal-close" onclick="closeEditModal()">&times;</button>
+            </div>
+            <div class="modal-body edit-modal-body">
+                <input type="hidden" id="editVideoId">
+
+                <div class="form-group">
+                    <label>Rating:</label>
+                    <div class="rating-picker">
+                        <button type="button" class="rating-pick-btn" data-rating="0" onclick="selectModalRating(0)">○</button>
+                        <button type="button" class="rating-pick-btn" data-rating="1" onclick="selectModalRating(1)">●</button>
+                        <button type="button" class="rating-pick-btn" data-rating="2" onclick="selectModalRating(2)">●●</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="editNotes">Notes (viewable in TV app when unlocked):</label>
+                    <textarea id="editNotes" rows="6" placeholder="Enter custom notes, comments, or summaries..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="editTags">Tags (comma-separated, e.g. nature, 4k, vacation):</label>
+                    <input type="text" id="editTags" placeholder="action, comedy, favorites">
+                    <div id="modalExistingTags" class="tag-chips-preview"></div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveEditModal()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Video Preview Player Modal -->
+    <div id="videoModal" class="modal hidden" onclick="closeModal(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modalTitle">Video Preview</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <video id="playerPreview" controls preload="metadata"></video>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

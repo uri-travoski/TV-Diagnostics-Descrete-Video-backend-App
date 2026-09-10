@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="600dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/card_dark"
+    android:padding="28dp">
+
+    <!-- Header & Rating -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:id="@+id/tvDetailTitle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@color/text_white"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:text="Video Title" />
+
+        <!-- Discreet Circle Rating symbol: ○, ●, or ●● -->
+        <TextView
+            android:id="@+id/tvDetailRating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/circle_filled"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:text="●●" />
+    </LinearLayout>
+
+    <!-- Metadata Badges Row -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="14dp">
+
+        <TextView
+            android:id="@+id/tvDetailDuration"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/accent_blue"
+            android:textSize="13sp"
+            android:text="Duration: 01:24:10"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/tvDetailResolution"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/text_muted"
+            android:textSize="13sp"
+            android:text="1080p (H.264 / AAC)"
+            android:layout_marginEnd="16dp" />
+
+        <TextView
+            android:id="@+id/tvDetailProgressInfo"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textColor="@color/accent_green"
+            android:textSize="13sp"
+            android:text="Watched: 45:10 (53%)" />
+    </LinearLayout>
+
+    <!-- Tags Section -->
+    <TextView
+        android:id="@+id/tvTagsHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/tags_header"
+        android:textColor="@color/text_muted"
+        android:textSize="11sp"
+        android:textAllCaps="true"
+        android:visibility="gone"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tvDetailTags"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textColor="#93C5FD"
+        android:textSize="13sp"
+        android:visibility="gone"
+        android:layout_marginBottom="14dp" />
+
+    <!-- Notes Section (Visible only when unlocked via 4-digit PIN in settings) -->
+    <TextView
+        android:id="@+id/tvNotesHeader"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/notes_header"
+        android:textColor="@color/text_muted"
+        android:textSize="11sp"
+        android:textAllCaps="true"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/tvDetailNotes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#0F172A"
+        android:padding="12dp"
+        android:textColor="@color/text_white"
+        android:textSize="13sp"
+        android:minHeight="44dp"
+        android:text="@string/no_notes"
+        android:layout_marginBottom="24dp" />
+
+    <!-- Action Buttons Row (D-pad focusable) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/btnResetVideoProgress"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:text="@string/btn_reset_progress"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:layout_marginEnd="10dp" />
+
+        <Button
+            android:id="@+id/btnPlayStart"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:text="Play from Start"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/text_white"
+            android:textSize="13sp"
+            android:layout_marginEnd="10dp" />
+
+        <Button
+            android:id="@+id/btnResume"
+            android:layout_width="wrap_content"
+            android:layout_height="46dp"
+            android:text="Resume from 00:00"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/accent_blue"
+            android:textStyle="bold"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+</LinearLayout>

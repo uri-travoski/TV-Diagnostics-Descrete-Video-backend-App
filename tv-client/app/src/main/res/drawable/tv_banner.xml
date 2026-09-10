@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="320dp"
+    android:height="180dp"
+    android:viewportWidth="320"
+    android:viewportHeight="180">
+    <!-- Background Gradient -->
+    <path
+        android:pathData="M0,0h320v180h-320z"
+        android:fillColor="#0B0F19" />
+    <path
+        android:pathData="M0,0h320v180h-320z"
+        android:fillColor="#151D2F" />
+    <!-- Diagnostic Grid lines -->
+    <path
+        android:pathData="M40,0v180 M80,0v180 M120,0v180 M160,0v180 M200,0v180 M240,0v180 M280,0v180"
+        android:strokeWidth="1"
+        android:strokeColor="#1E293B" />
+    <path
+        android:pathData="M0,30h320 M0,60h320 M0,90h320 M0,120h320 M0,150h320"
+        android:strokeWidth="1"
+        android:strokeColor="#1E293B" />
+    <!-- Oscilloscope / Pulse Wave -->
+    <path
+        android:pathData="M40,90 L90,90 L110,40 L130,130 L150,70 L170,105 L185,90 L280,90"
+        android:strokeWidth="4"
+        android:strokeColor="#3B82F6" />
+    <!-- Center Target Circle -->
+    <path
+        android:pathData="M160,90m-25,0a25,25 0 1,1 50,0a25,25 0 1,1 -50,0"
+        android:strokeWidth="2"
+        android:strokeColor="#10B981" />
+</vector>
