@@ -26,17 +26,17 @@ The platform consists of:
 
 ---
 
-## Part 1: Docker Compose Backend Setup
+## Part 1: Standalone Docker Compose Backend Setup
 
-### 1. Configure Video Folder Mounts
-Open `backend/docker-compose.yml` and configure your environment variables and folder mounts:
+The backend is published as a pre-built container image on **GitHub Container Registry (GHCR)**: `ghcr.io/uri-travoski/tv-diagnostics-backend:latest`. You can run it completely standalone without building from source.
+
+### 1. Download or Configure `docker-compose.yml`
+Save the following `docker-compose.yml`:
 
 ```yaml
 services:
   tv-diagnostics-backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/uri-travoski/tv-diagnostics-backend:latest
     container_name: tv-diagnostics-backend
     restart: unless-stopped
     ports:
@@ -47,26 +47,19 @@ services:
       - PORT=8090
       - SCAN_ON_STARTUP=true
       - SCAN_INTERVAL_MINUTES=30
+      - MOUNT_POLL_INTERVAL_SECONDS=5 # Polling interval while waiting for SMB mount
       - VIDEO_DIRS=/videos
     volumes:
-      # Mount your host video folders here (read-only recommended)
+      # Mount your host/SMB video folder here (read-only recommended)
       - /mnt/storage/my_videos:/videos:ro
       
-      # Persistent database and generated 60s thumbnails
+      # Persistent database, rolling backups, and generated 60s thumbnails
       - ./data:/app/data
 ```
 
-### Delayed SMB / Network Share Mount Resilience
-If your video folder is an external SMB/CIFS hard drive or NAS share that mounts *after* the host OS boots or after Docker starts:
-- **Automatic Mount Polling**: The backend will detect that `/videos` is not yet available or is an empty mountpoint. It enters `waiting_for_mount` mode and polls every 5 seconds without crashing.
-- **Instant Auto-Scan on Mount**: The moment the SMB share becomes mounted and accessible, the backend detects the mount and automatically begins indexing media and generating 60s thumbnails.
-- **Database Safety Guard**: While waiting for the drive to mount, the scanner **will never delete or prune** previously saved video records, ratings, notes, tags, or progress from the database.
-- **Live Status in Web Console**: The admin UI and `/api/v1/status` display a live badge (`🟡 Waiting for SMB Mount...` vs `🟢 Storage: Mounted & Ready`) and automatically reloads the library once mounted.
-
 ### 2. Start the Backend
 ```bash
-cd backend
-docker-compose up -d --build
+docker compose up -d
 ```
 
 The backend server is now running on `http://<your-server-ip>:8090`.

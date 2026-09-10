@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from .config import (
     BASE_DIR, HOST, PORT, PIN_CODE, NOTES_PIN, AUTH_TOKEN,
-    VIDEO_DIRS, SCAN_ON_STARTUP, SCAN_INTERVAL_MINUTES
+    VIDEO_DIRS, SCAN_ON_STARTUP, SCAN_INTERVAL_MINUTES, APP_VERSION
 )
 from .database import (
     init_db, get_all_videos, get_video,
@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="TV Diagnostics System",
     description="Stealth Media Streaming & Diagnostic Engine",
-    version="1.0.0",
+    version=APP_VERSION,
     lifespan=lifespan
 )
 
@@ -81,12 +81,12 @@ class MetadataUpdateRequest(BaseModel):
 @app.get("/", response_class=HTMLResponse)
 async def decoy_root(request: Request):
     """Discreet decoy root page simulating TV Diagnostic utility."""
-    return templates.TemplateResponse(request=request, name="decoy.html")
+    return templates.TemplateResponse(request, "decoy.html", {"version": APP_VERSION})
 
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_portal(request: Request, pin: Optional[str] = None):
     """Media library management portal."""
-    return templates.TemplateResponse(request=request, name="admin.html")
+    return templates.TemplateResponse(request, "admin.html", {"version": APP_VERSION})
 
 
 @app.post("/api/v1/auth/verify")
@@ -192,6 +192,7 @@ async def server_status():
     mount_state = get_mount_state()
     return {
         "status": "online",
+        "version": APP_VERSION,
         "mount_status": mount_state["status"],
         "mount_details": mount_state["details"],
         "is_scanning": mount_state["is_scanning"],

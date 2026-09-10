@@ -174,4 +174,15 @@
             android:focusable="true" />
     </LinearLayout>
 
+    <!-- App Version Display -->
+    <TextView
+        android:id="@+id/tvAppVersion"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="TV Diagnostics v1.0.1"
+        android:textColor="@color/text_muted"
+        android:textSize="11sp"
+        android:gravity="center"
+        android:layout_marginTop="14dp" />
+
 </LinearLayout>

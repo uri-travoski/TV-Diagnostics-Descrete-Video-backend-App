@@ -34,6 +34,7 @@ class SettingsDialog(
     private lateinit var btnToggleAutoLock: Button
     private lateinit var tvConnectionStatus: TextView
     private lateinit var btnTestConnection: Button
+    private lateinit var tvAppVersion: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +50,19 @@ class SettingsDialog(
         btnToggleAutoLock = findViewById(R.id.btnToggleAutoLock)
         tvConnectionStatus = findViewById(R.id.tvConnectionStatus)
         btnTestConnection = findViewById(R.id.btnTestConnection)
+        tvAppVersion = findViewById(R.id.tvAppVersion)
+
+        val pInfo = try {
+            context.packageManager.getPackageInfo(context.packageName, 0)
+        } catch (e: Exception) { null }
+        val verName = pInfo?.versionName ?: "1.0.1"
+        val verCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            pInfo?.longVersionCode ?: 2L
+        } else {
+            @Suppress("DEPRECATION")
+            pInfo?.versionCode?.toLong() ?: 2L
+        }
+        tvAppVersion.text = "TV Diagnostics v$verName (Build $verCode)"
 
         val prefs = TVDiagnosticsApp.instance.preferences
         etServerUrl.setText(prefs.serverUrl)

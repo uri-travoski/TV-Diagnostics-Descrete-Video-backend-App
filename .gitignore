@@ -16,6 +16,7 @@ venv/
 ENV/
 
 # Databases & Backups
+data/
 backend/data/db/*.db
 backend/data/db/*.db-wal
 backend/data/db/*.db-shm

@@ -16,15 +16,15 @@ services:
       - SCAN_ON_STARTUP=true
       - SCAN_INTERVAL_MINUTES=30
       - MOUNT_POLL_INTERVAL_SECONDS=5 # Poll interval while waiting for SMB drive to mount
-      - VIDEO_DIRS=/videos         # Mounted directory inside the container
+      - VIDEO_DIRS=/videos         # Mounted directory inside container
     volumes:
-      # Mount video folders here (replace ./sample_videos with your host/SMB video path)
-      - ./sample_videos:/videos:ro
+      # Mount your host video folders here (replace ./videos with your external SMB or local folder)
+      - ./videos:/videos:ro
       
-      # Persistent storage for metadata database, backups, and generated 60s thumbnails
+      # Persistent storage for metadata database, rolling backups, and generated 60s thumbnails
       - ./data:/app/data
 
     # Optional: uncomment below if building locally from source
     # build:
-    #   context: .
+    #   context: ./backend
     #   dockerfile: Dockerfile
