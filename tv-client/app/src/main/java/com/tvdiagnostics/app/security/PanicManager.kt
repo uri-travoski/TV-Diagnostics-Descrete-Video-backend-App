@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Intent
 import android.view.KeyEvent
 import com.tvdiagnostics.app.TVDiagnosticsApp
-import com.tvdiagnostics.app.decoy.ScreenTestActivity
+import com.tvdiagnostics.app.decoy.DecoyActivity
 
 object PanicManager {
     private var lastBackPressTime: Long = 0
@@ -39,9 +39,10 @@ object PanicManager {
         // 1. Lock vault
         TVDiagnosticsApp.instance.preferences.lockVault()
 
-        // 2. Clear entire task backstack and instantly present Screen Test
-        val intent = Intent(activity, ScreenTestActivity::class.java).apply {
+        // 2. Clear entire task backstack and instantly present Decoy PIN / Lock Screen
+        val intent = Intent(activity, DecoyActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(DecoyActivity.EXTRA_AUTO_PROMPT_PIN, true)
         }
         activity.startActivity(intent)
         activity.finish()
