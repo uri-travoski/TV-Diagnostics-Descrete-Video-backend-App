@@ -56,6 +56,9 @@ class VaultActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_vault)
 
+        // Prevent virtual keyboard from popping up automatically on TV
+        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+
         initViews()
         setupFilters()
         setupSearch()
@@ -124,6 +127,9 @@ class VaultActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnLockVault).setOnClickListener {
             lockAndExit()
         }
+
+        // Set default D-pad remote focus on the first filter pill
+        findViewById<Button>(R.id.filterAll)?.requestFocus()
     }
 
     private fun setupSearch() {
@@ -156,6 +162,22 @@ class VaultActivity : AppCompatActivity() {
         val btnUnrated = findViewById<Button>(R.id.filterUnrated)
 
         val ratingButtons = listOf(btnAll, btnContinue, btnL2, btnL1, btnUnrated)
+
+        // D-pad focus scaling animation for header buttons
+        val allHeaderButtons = ratingButtons + listOfNotNull(
+            btnVaultTags, btnClearTagFilter, btnVaultSort,
+            findViewById(R.id.btnVaultSettings),
+            findViewById(R.id.btnLockVault)
+        )
+        allHeaderButtons.forEach { btn ->
+            btn.setOnFocusChangeListener { v, hasFocus ->
+                v.animate()
+                    .scaleX(if (hasFocus) 1.08f else 1.0f)
+                    .scaleY(if (hasFocus) 1.08f else 1.0f)
+                    .setDuration(120)
+                    .start()
+            }
+        }
 
         fun highlightButton(active: Button) {
             ratingButtons.forEach { b ->

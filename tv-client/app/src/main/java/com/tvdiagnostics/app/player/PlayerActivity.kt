@@ -188,13 +188,37 @@ class PlayerActivity : AppCompatActivity() {
                 showOverlayTemporarily()
                 return true
             }
-            KeyEvent.KEYCODE_DPAD_LEFT, KeyEvent.KEYCODE_MEDIA_REWIND -> {
+            KeyEvent.KEYCODE_MEDIA_PLAY -> {
+                if (!player.isPlaying) {
+                    player.play()
+                    showOverlayTemporarily()
+                }
+                return true
+            }
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> {
+                if (player.isPlaying) {
+                    player.pause()
+                    showOverlayTemporarily()
+                }
+                return true
+            }
+            KeyEvent.KEYCODE_MEDIA_STOP -> {
+                syncProgress(completed = false)
+                releasePlayer()
+                finish()
+                return true
+            }
+            KeyEvent.KEYCODE_DPAD_LEFT,
+            KeyEvent.KEYCODE_MEDIA_REWIND,
+            KeyEvent.KEYCODE_MEDIA_STEP_BACKWARD -> {
                 val newPos = (player.currentPosition - 10000).coerceAtLeast(0L)
                 player.seekTo(newPos)
                 showOverlayTemporarily()
                 return true
             }
-            KeyEvent.KEYCODE_DPAD_RIGHT, KeyEvent.KEYCODE_MEDIA_FAST_FORWARD -> {
+            KeyEvent.KEYCODE_DPAD_RIGHT,
+            KeyEvent.KEYCODE_MEDIA_FAST_FORWARD,
+            KeyEvent.KEYCODE_MEDIA_STEP_FORWARD -> {
                 val newPos = (player.currentPosition + 10000).coerceAtMost(player.duration)
                 player.seekTo(newPos)
                 showOverlayTemporarily()
@@ -213,6 +237,12 @@ class PlayerActivity : AppCompatActivity() {
                 showOverlayTemporarily()
                 playerView.showController()
                 return true
+            }
+            KeyEvent.KEYCODE_BACK -> {
+                if (playerView.isControllerFullyVisible) {
+                    playerView.hideController()
+                    return true
+                }
             }
         }
 

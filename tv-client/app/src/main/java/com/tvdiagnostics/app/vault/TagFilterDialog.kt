@@ -8,6 +8,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
@@ -36,6 +37,8 @@ class TagFilterDialog(
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.dialog_tags)
         window?.setBackgroundDrawableResource(android.R.color.transparent)
+        // Prevent virtual keyboard from popping up automatically on TV
+        window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
         etTagFilterSearch = findViewById(R.id.etTagFilterSearch)
         gridTagsContainer = findViewById(R.id.gridTagsContainer)
@@ -87,6 +90,16 @@ class TagFilterDialog(
                 setTextColor(ContextCompat.getColor(context, R.color.text_white))
                 isFocusable = true
                 isClickable = true
+                nextFocusDownId = R.id.gridTagsContainer
+                nextFocusUpId = R.id.etTagFilterSearch
+
+                setOnFocusChangeListener { v, hasFocus ->
+                    v.animate()
+                        .scaleX(if (hasFocus) 1.15f else 1.0f)
+                        .scaleY(if (hasFocus) 1.15f else 1.0f)
+                        .setDuration(120)
+                        .start()
+                }
 
                 setOnClickListener {
                     if (letter == "ALL") {
@@ -120,6 +133,9 @@ class TagFilterDialog(
             } else {
                 "No tags available."
             }
+            if (layoutAlphabetPills.childCount > 0) {
+                layoutAlphabetPills.getChildAt(0).requestFocus()
+            }
             return
         }
 
@@ -144,6 +160,15 @@ class TagFilterDialog(
                 setBackgroundResource(R.drawable.btn_tv_focus)
                 isFocusable = true
                 isClickable = true
+                nextFocusUpId = R.id.hsvAlphabet
+
+                setOnFocusChangeListener { v, hasFocus ->
+                    v.animate()
+                        .scaleX(if (hasFocus) 1.06f else 1.0f)
+                        .scaleY(if (hasFocus) 1.06f else 1.0f)
+                        .setDuration(120)
+                        .start()
+                }
 
                 if (cleanTag.equals(currentSelectedTag, ignoreCase = true)) {
                     setTextColor(ContextCompat.getColor(context, R.color.accent_blue))
@@ -160,6 +185,10 @@ class TagFilterDialog(
             gridTagsContainer.addView(btn)
         }
 
-        focusedView?.requestFocus()
+        if (focusedView != null) {
+            focusedView?.requestFocus()
+        } else if (layoutAlphabetPills.childCount > 0) {
+            layoutAlphabetPills.getChildAt(0).requestFocus()
+        }
     }
 }

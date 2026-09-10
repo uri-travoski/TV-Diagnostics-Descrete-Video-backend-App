@@ -5,6 +5,7 @@ import android.content.Context
 import android.os.Bundle
 import android.view.View
 import android.view.Window
+import android.view.WindowManager
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -42,6 +43,8 @@ class SettingsDialog(
         setContentView(R.layout.dialog_settings)
 
         window?.setBackgroundDrawableResource(android.R.color.transparent)
+        // Prevent virtual keyboard from popping up automatically on TV
+        window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
         etServerUrl = findViewById(R.id.etServerUrl)
         tvNotesStatus = findViewById(R.id.tvNotesStatus)
@@ -96,11 +99,24 @@ class SettingsDialog(
             Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
         }
 
-        findViewById<Button>(R.id.btnSettingsCancel).setOnClickListener {
+        val btnCancel = findViewById<Button>(R.id.btnSettingsCancel)
+        val btnSave = findViewById<Button>(R.id.btnSettingsSave)
+
+        listOf(btnTestConnection, btnToggleNotes, btnToggleAutoLock, btnCancel, btnSave).forEach { btn ->
+            btn.setOnFocusChangeListener { v, hasFocus ->
+                v.animate()
+                    .scaleX(if (hasFocus) 1.06f else 1.0f)
+                    .scaleY(if (hasFocus) 1.06f else 1.0f)
+                    .setDuration(120)
+                    .start()
+            }
+        }
+
+        btnCancel.setOnClickListener {
             dismiss()
         }
 
-        findViewById<Button>(R.id.btnSettingsSave).setOnClickListener {
+        btnSave.setOnClickListener {
             val url = etServerUrl.text.toString().trim().trimEnd('/')
             if (url.isNotEmpty()) {
                 prefs.serverUrl = url
@@ -109,6 +125,9 @@ class SettingsDialog(
             dismiss()
             onDismissCallback?.invoke()
         }
+
+        // Set default D-pad focus to test connection button, avoiding popping virtual keyboard
+        btnTestConnection.requestFocus()
     }
 
     private fun testServerConnection() {

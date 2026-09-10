@@ -97,6 +97,16 @@ class VideoDetailDialog(
             tvNotes.visibility = View.GONE
         }
 
+        listOf(btnResetProgress, btnPlayStart, btnResume).forEach { btn ->
+            btn.setOnFocusChangeListener { v, hasFocus ->
+                v.animate()
+                    .scaleX(if (hasFocus) 1.08f else 1.0f)
+                    .scaleY(if (hasFocus) 1.08f else 1.0f)
+                    .setDuration(120)
+                    .start()
+            }
+        }
+
         btnResume.setOnClickListener {
             launchPlayer(startPositionMs = (video.watchedSeconds * 1000).toLong())
         }

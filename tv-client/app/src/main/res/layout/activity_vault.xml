@@ -40,7 +40,10 @@
                 android:background="@drawable/btn_tv_focus"
                 android:textColor="@color/text_white"
                 android:textSize="12sp"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginEnd="6dp"
+                android:focusable="true"
+                android:nextFocusRight="@+id/filterContinue"
+                android:nextFocusDown="@+id/etVaultSearch" />
 
             <Button
                 android:id="@+id/filterContinue"
@@ -50,7 +53,11 @@
                 android:background="@drawable/btn_tv_focus"
                 android:textColor="@color/text_white"
                 android:textSize="12sp"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginEnd="6dp"
+                android:focusable="true"
+                android:nextFocusLeft="@+id/filterAll"
+                android:nextFocusRight="@+id/filterLevel2"
+                android:nextFocusDown="@+id/etVaultSearch" />
 
             <Button
                 android:id="@+id/filterLevel2"
@@ -60,7 +67,11 @@
                 android:background="@drawable/btn_tv_focus"
                 android:textColor="@color/circle_filled"
                 android:textSize="14sp"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginEnd="6dp"
+                android:focusable="true"
+                android:nextFocusLeft="@+id/filterContinue"
+                android:nextFocusRight="@+id/filterLevel1"
+                android:nextFocusDown="@+id/btnVaultTags" />
 
             <Button
                 android:id="@+id/filterLevel1"
@@ -70,7 +81,11 @@
                 android:background="@drawable/btn_tv_focus"
                 android:textColor="@color/circle_filled"
                 android:textSize="14sp"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginEnd="6dp"
+                android:focusable="true"
+                android:nextFocusLeft="@+id/filterLevel2"
+                android:nextFocusRight="@+id/filterUnrated"
+                android:nextFocusDown="@+id/btnVaultTags" />
 
             <Button
                 android:id="@+id/filterUnrated"
@@ -80,7 +95,11 @@
                 android:background="@drawable/btn_tv_focus"
                 android:textColor="@color/circle_empty"
                 android:textSize="14sp"
-                android:layout_marginEnd="6dp" />
+                android:layout_marginEnd="6dp"
+                android:focusable="true"
+                android:nextFocusLeft="@+id/filterLevel1"
+                android:nextFocusRight="@+id/btnVaultSettings"
+                android:nextFocusDown="@+id/btnVaultTags" />
         </LinearLayout>
 
         <!-- Options / Settings Button -->
@@ -92,7 +111,11 @@
             android:background="@drawable/btn_tv_focus"
             android:textColor="@color/text_muted"
             android:textSize="11sp"
-            android:layout_marginEnd="8dp" />
+            android:layout_marginEnd="8dp"
+            android:focusable="true"
+            android:nextFocusLeft="@+id/filterUnrated"
+            android:nextFocusRight="@+id/btnLockVault"
+            android:nextFocusDown="@+id/btnVaultSort" />
 
         <!-- Lock / Revert Button -->
         <Button
@@ -102,7 +125,10 @@
             android:text="🔒 Revert to Decoy"
             android:background="@drawable/btn_tv_focus"
             android:textColor="@color/danger_red"
-            android:textSize="11sp" />
+            android:textSize="11sp"
+            android:focusable="true"
+            android:nextFocusLeft="@+id/btnVaultSettings"
+            android:nextFocusDown="@+id/btnVaultSort" />
     </LinearLayout>
 
     <!-- Search & Tag Filter Bar (Row 2) -->
@@ -128,7 +154,10 @@
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:focusable="true"
-            android:layout_marginEnd="16dp" />
+            android:layout_marginEnd="16dp"
+            android:nextFocusUp="@+id/filterAll"
+            android:nextFocusRight="@+id/btnVaultTags"
+            android:nextFocusDown="@+id/rvVideoGrid" />
 
         <!-- D-pad focusable Tag Selector Button (Supports 100+ tags via TagFilterDialog) -->
         <Button
@@ -141,7 +170,11 @@
             android:textSize="11sp"
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
-            android:focusable="true" />
+            android:focusable="true"
+            android:nextFocusUp="@+id/filterLevel2"
+            android:nextFocusLeft="@+id/etVaultSearch"
+            android:nextFocusRight="@+id/btnClearTagFilter"
+            android:nextFocusDown="@+id/rvVideoGrid" />
 
         <!-- Quick Clear Tag Button -->
         <Button
@@ -156,7 +189,11 @@
             android:paddingEnd="8dp"
             android:layout_marginStart="6dp"
             android:visibility="gone"
-            android:focusable="true" />
+            android:focusable="true"
+            android:nextFocusUp="@+id/filterUnrated"
+            android:nextFocusLeft="@+id/btnVaultTags"
+            android:nextFocusRight="@+id/btnVaultSort"
+            android:nextFocusDown="@+id/rvVideoGrid" />
 
         <View
             android:layout_width="0dp"
@@ -175,7 +212,10 @@
             android:paddingStart="12dp"
             android:paddingEnd="12dp"
             android:layout_marginStart="10dp"
-            android:focusable="true" />
+            android:focusable="true"
+            android:nextFocusUp="@+id/btnVaultSettings"
+            android:nextFocusLeft="@+id/btnVaultTags"
+            android:nextFocusDown="@+id/rvVideoGrid" />
     </LinearLayout>
 
     <!-- TV Grid View for Videos -->
@@ -185,6 +225,9 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingBottom="24dp" />
+        android:paddingBottom="24dp"
+        android:focusable="false"
+        android:descendantFocusability="afterDescendants"
+        android:nextFocusUp="@+id/btnVaultTags" />
 
 </LinearLayout>

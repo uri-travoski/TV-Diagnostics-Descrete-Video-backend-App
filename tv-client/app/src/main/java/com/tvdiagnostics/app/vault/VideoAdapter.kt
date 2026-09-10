@@ -95,6 +95,18 @@ class VideoAdapter(
             itemView.setOnClickListener {
                 onVideoClick(item)
             }
+
+            // TV Remote D-pad focus zoom & elevation feedback
+            itemView.setOnFocusChangeListener { v, hasFocus ->
+                val scale = if (hasFocus) 1.05f else 1.0f
+                val elev = if (hasFocus) 12f else 0f
+                v.animate()
+                    .scaleX(scale)
+                    .scaleY(scale)
+                    .translationZ(elev)
+                    .setDuration(150)
+                    .start()
+            }
         }
     }
 }

@@ -55,6 +55,8 @@ class DecoyActivity : AppCompatActivity() {
 
         if (intent.getBooleanExtra(EXTRA_AUTO_PROMPT_PIN, false)) {
             showPinDialog()
+        } else {
+            findViewById<Button>(R.id.btnScreenTest)?.requestFocus()
         }
     }
 
@@ -100,19 +102,34 @@ class DecoyActivity : AppCompatActivity() {
     }
 
     private fun setupListeners() {
-        findViewById<Button>(R.id.btnScreenTest).setOnClickListener {
+        val btnScreenTest = findViewById<Button>(R.id.btnScreenTest)
+        val btnPingTest = findViewById<Button>(R.id.btnPingTest)
+        val btnServerCode = findViewById<Button>(R.id.btnServerCode)
+        val btnSettings = findViewById<Button>(R.id.btnSettings)
+
+        listOf(btnScreenTest, btnPingTest, btnServerCode, btnSettings).forEach { btn ->
+            btn.setOnFocusChangeListener { v, hasFocus ->
+                v.animate()
+                    .scaleX(if (hasFocus) 1.05f else 1.0f)
+                    .scaleY(if (hasFocus) 1.05f else 1.0f)
+                    .setDuration(120)
+                    .start()
+            }
+        }
+
+        btnScreenTest.setOnClickListener {
             startActivity(Intent(this, ScreenTestActivity::class.java))
         }
 
-        findViewById<Button>(R.id.btnPingTest).setOnClickListener {
+        btnPingTest.setOnClickListener {
             runPingTest()
         }
 
-        findViewById<Button>(R.id.btnServerCode).setOnClickListener {
+        btnServerCode.setOnClickListener {
             showPinDialog()
         }
 
-        findViewById<Button>(R.id.btnSettings).setOnClickListener {
+        btnSettings.setOnClickListener {
             showSettingsDialog()
         }
     }

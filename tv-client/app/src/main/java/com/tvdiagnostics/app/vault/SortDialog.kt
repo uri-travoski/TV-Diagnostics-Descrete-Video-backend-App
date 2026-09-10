@@ -49,13 +49,28 @@ class SortDialog(
                 btn.setTextColor(ContextCompat.getColor(context, R.color.accent_blue))
                 btn.requestFocus()
             }
+            btn.setOnFocusChangeListener { v, hasFocus ->
+                v.animate()
+                    .scaleX(if (hasFocus) 1.05f else 1.0f)
+                    .scaleY(if (hasFocus) 1.05f else 1.0f)
+                    .setDuration(120)
+                    .start()
+            }
             btn.setOnClickListener {
                 onSortSelected(option)
                 dismiss()
             }
         }
 
-        findViewById<Button>(R.id.btnSortClose).setOnClickListener {
+        val btnClose = findViewById<Button>(R.id.btnSortClose)
+        btnClose.setOnFocusChangeListener { v, hasFocus ->
+            v.animate()
+                .scaleX(if (hasFocus) 1.05f else 1.0f)
+                .scaleY(if (hasFocus) 1.05f else 1.0f)
+                .setDuration(120)
+                .start()
+        }
+        btnClose.setOnClickListener {
             dismiss()
         }
     }
