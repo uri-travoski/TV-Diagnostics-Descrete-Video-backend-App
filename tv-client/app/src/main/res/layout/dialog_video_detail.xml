@@ -35,83 +35,99 @@
             android:text="●●" />
     </LinearLayout>
 
-    <!-- Metadata Badges Row -->
-    <LinearLayout
+    <!-- Scrollable Detail Content to prevent any cut-off on TV viewports -->
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginBottom="14dp">
+        android:maxHeight="240dp"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:layout_marginBottom="18dp">
 
-        <TextView
-            android:id="@+id/tvDetailDuration"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="@color/accent_blue"
-            android:textSize="13sp"
-            android:text="Duration: 01:24:10"
-            android:layout_marginEnd="16dp" />
+            android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/tvDetailResolution"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/text_muted"
-            android:textSize="13sp"
-            android:text="1080p (H.264 / AAC)"
-            android:layout_marginEnd="16dp" />
+            <!-- Metadata Badges Row -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="14dp">
 
-        <TextView
-            android:id="@+id/tvDetailProgressInfo"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="@color/accent_green"
-            android:textSize="13sp"
-            android:text="Watched: 45:10 (53%)" />
-    </LinearLayout>
+                <TextView
+                    android:id="@+id/tvDetailDuration"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="13sp"
+                    android:text="Duration: 01:24:10"
+                    android:layout_marginEnd="16dp" />
 
-    <!-- Tags Section -->
-    <TextView
-        android:id="@+id/tvTagsHeader"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/tags_header"
-        android:textColor="@color/text_muted"
-        android:textSize="11sp"
-        android:textAllCaps="true"
-        android:visibility="gone"
-        android:layout_marginBottom="4dp" />
+                <TextView
+                    android:id="@+id/tvDetailResolution"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/text_muted"
+                    android:textSize="13sp"
+                    android:text="1080p (H.264 / AAC)"
+                    android:layout_marginEnd="16dp" />
 
-    <TextView
-        android:id="@+id/tvDetailTags"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#93C5FD"
-        android:textSize="13sp"
-        android:visibility="gone"
-        android:layout_marginBottom="14dp" />
+                <TextView
+                    android:id="@+id/tvDetailProgressInfo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/accent_green"
+                    android:textSize="13sp"
+                    android:text="Watched: 45:10 (53%)" />
+            </LinearLayout>
 
-    <!-- Notes Section (Visible only when unlocked via 4-digit PIN in settings) -->
-    <TextView
-        android:id="@+id/tvNotesHeader"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/notes_header"
-        android:textColor="@color/text_muted"
-        android:textSize="11sp"
-        android:textAllCaps="true"
-        android:layout_marginBottom="4dp" />
+            <!-- Tags Section -->
+            <TextView
+                android:id="@+id/tvTagsHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/tags_header"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:textAllCaps="true"
+                android:visibility="gone"
+                android:layout_marginBottom="4dp" />
 
-    <TextView
-        android:id="@+id/tvDetailNotes"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#0F172A"
-        android:padding="12dp"
-        android:textColor="@color/text_white"
-        android:textSize="13sp"
-        android:minHeight="44dp"
-        android:text="@string/no_notes"
-        android:layout_marginBottom="24dp" />
+            <TextView
+                android:id="@+id/tvDetailTags"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textColor="#93C5FD"
+                android:textSize="13sp"
+                android:visibility="gone"
+                android:layout_marginBottom="14dp" />
+
+            <!-- Notes Section (Visible only when unlocked via 4-digit PIN in settings) -->
+            <TextView
+                android:id="@+id/tvNotesHeader"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/notes_header"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:textAllCaps="true"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvDetailNotes"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#0F172A"
+                android:padding="12dp"
+                android:textColor="@color/text_white"
+                android:textSize="13sp"
+                android:minHeight="44dp"
+                android:text="@string/no_notes" />
+
+        </LinearLayout>
+    </ScrollView>
 
     <!-- Action Buttons Row (D-pad focusable) -->
     <LinearLayout

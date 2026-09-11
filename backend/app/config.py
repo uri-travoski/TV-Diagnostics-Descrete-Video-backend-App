@@ -7,7 +7,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", str(BASE_DIR / "data")))
 DB_DIR = DATA_DIR / "db"
 THUMBNAILS_DIR = DATA_DIR / "thumbnails"
 
-APP_VERSION = "1.0.1"
+APP_VERSION = "1.0.2"
 
 # Ensure directories exist
 DB_DIR.mkdir(parents=True, exist_ok=True)
@@ -23,7 +23,7 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8090"))
 
 # Security
-PIN_CODE = os.getenv("PIN_CODE", "123456")  # 6-digit PIN for TV Vault unlock
+PIN_CODE = os.getenv("PIN_CODE", "482061")  # Default PIN for TV Vault unlock
 NOTES_PIN = os.getenv("NOTES_PIN", "1234")  # 4-digit PIN for TV Notes visibility unlock
 AUTH_TOKEN = os.getenv("AUTH_TOKEN", "tv-diag-secret-token")
 

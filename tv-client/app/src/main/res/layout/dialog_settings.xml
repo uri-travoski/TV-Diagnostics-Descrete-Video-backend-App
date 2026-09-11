@@ -13,173 +13,189 @@
         android:textColor="@color/text_white"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:layout_marginBottom="14dp" />
+        android:layout_marginBottom="12dp" />
 
-    <!-- Backend URL Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Backend Server URL (HTTP &amp; Port 8090):"
-        android:textColor="@color/text_muted"
-        android:textSize="12sp"
-        android:layout_marginBottom="6dp" />
-
-    <LinearLayout
+    <!-- Scrollable Settings Body to guarantee fit on any TV screen without cut-off -->
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="6dp">
+        android:layout_height="310dp"
+        android:scrollbars="vertical"
+        android:fadeScrollbars="false"
+        android:layout_marginBottom="14dp">
 
-        <EditText
-            android:id="@+id/etServerUrl"
-            android:layout_width="0dp"
-            android:layout_height="44dp"
-            android:layout_weight="1"
-            android:background="#0F172A"
-            android:paddingStart="12dp"
-            android:paddingEnd="12dp"
-            android:textColor="@color/text_white"
-            android:textSize="13sp"
-            android:hint="@string/default_server_url"
-            android:textColorHint="#475569"
-            android:inputType="textUri"
-            android:focusable="true"
-            android:layout_marginEnd="10dp" />
-
-        <Button
-            android:id="@+id/btnTestConnection"
-            android:layout_width="wrap_content"
-            android:layout_height="44dp"
-            android:text="Test"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/accent_blue"
-            android:textSize="12sp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:focusable="true" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/tvConnectionStatus"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textSize="12sp"
-        android:visibility="gone"
-        android:layout_marginBottom="6dp" />
-
-    <TextView
-        android:id="@+id/tvDeviceIpHint"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text=""
-        android:textColor="#94A3B8"
-        android:textSize="11sp"
-        android:layout_marginBottom="14dp" />
-
-    <!-- Custom PIN Configuration Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Vault Diagnostic PIN (4–6 Digits):"
-        android:textColor="@color/text_muted"
-        android:textSize="12sp"
-        android:layout_marginBottom="6dp" />
-
-    <EditText
-        android:id="@+id/etPinCode"
-        android:layout_width="match_parent"
-        android:layout_height="44dp"
-        android:background="#0F172A"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:textColor="@color/text_white"
-        android:textSize="13sp"
-        android:hint="123456"
-        android:textColorHint="#475569"
-        android:inputType="numberPassword"
-        android:maxLength="6"
-        android:focusable="true"
-        android:layout_marginBottom="18dp" />
-
-    <!-- Notes Feature Toggle Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Video Notes Visibility (4-Digit PIN):"
-        android:textColor="@color/text_muted"
-        android:textSize="12sp"
-        android:layout_marginBottom="6dp" />
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="#0F172A"
-        android:padding="12dp"
-        android:layout_marginBottom="22dp">
-
-        <TextView
-            android:id="@+id/tvNotesStatus"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Status: OFF (Hidden)"
-            android:textColor="@color/text_white"
-            android:textSize="13sp" />
+            android:orientation="vertical">
 
-        <Button
-            android:id="@+id/btnToggleNotes"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:background="@drawable/btn_tv_focus"
-            android:text="Enable Notes"
-            android:textColor="@color/accent_blue"
-            android:textSize="12sp"
-            android:focusable="true" />
-    </LinearLayout>
+            <!-- Backend URL Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Backend Server URL (HTTP &amp; Port 8090):"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginBottom="6dp" />
 
-    <!-- Inactivity Auto-Lock Toggle Section -->
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Inactivity Auto-Lock (15m Pause / 5m Ended):"
-        android:textColor="@color/text_muted"
-        android:textSize="12sp"
-        android:layout_marginBottom="6dp" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="6dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:background="#0F172A"
-        android:padding="12dp"
-        android:layout_marginBottom="22dp">
+                <EditText
+                    android:id="@+id/etServerUrl"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="#0F172A"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:textColor="@color/text_white"
+                    android:textSize="13sp"
+                    android:hint="@string/default_server_url"
+                    android:textColorHint="#475569"
+                    android:inputType="textUri"
+                    android:focusable="true"
+                    android:layout_marginEnd="10dp" />
 
-        <TextView
-            android:id="@+id/tvAutoLockStatus"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Status: Enabled (Active)"
-            android:textColor="@color/text_white"
-            android:textSize="13sp" />
+                <Button
+                    android:id="@+id/btnTestConnection"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:text="Test"
+                    android:background="@drawable/btn_tv_focus"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="12sp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:focusable="true" />
+            </LinearLayout>
 
-        <Button
-            android:id="@+id/btnToggleAutoLock"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:background="@drawable/btn_tv_focus"
-            android:text="Disable"
-            android:textColor="@color/accent_blue"
-            android:textSize="12sp"
-            android:focusable="true" />
-    </LinearLayout>
+            <TextView
+                android:id="@+id/tvConnectionStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="12sp"
+                android:visibility="gone"
+                android:layout_marginBottom="6dp" />
 
-    <!-- Dialog Actions -->
+            <TextView
+                android:id="@+id/tvDeviceIpHint"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text=""
+                android:textColor="#94A3B8"
+                android:textSize="11sp"
+                android:layout_marginBottom="14dp" />
+
+            <!-- Custom PIN Configuration Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Vault Diagnostic PIN (4–6 Digits):"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginBottom="6dp" />
+
+            <EditText
+                android:id="@+id/etPinCode"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:background="#0F172A"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:textColor="@color/text_white"
+                android:textSize="13sp"
+                android:hint="482061"
+                android:textColorHint="#475569"
+                android:inputType="numberPassword"
+                android:maxLength="6"
+                android:focusable="true"
+                android:layout_marginBottom="18dp" />
+
+            <!-- Notes Feature Toggle Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Video Notes Visibility (4-Digit PIN):"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="#0F172A"
+                android:padding="12dp"
+                android:layout_marginBottom="18dp">
+
+                <TextView
+                    android:id="@+id/tvNotesStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Status: OFF (Hidden)"
+                    android:textColor="@color/text_white"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnToggleNotes"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:background="@drawable/btn_tv_focus"
+                    android:text="Enable Notes"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="12sp"
+                    android:focusable="true" />
+            </LinearLayout>
+
+            <!-- Inactivity Auto-Lock Toggle Section -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Inactivity Auto-Lock (15m Pause / 5m Ended):"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="#0F172A"
+                android:padding="12dp"
+                android:layout_marginBottom="10dp">
+
+                <TextView
+                    android:id="@+id/tvAutoLockStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Status: Enabled (Active)"
+                    android:textColor="@color/text_white"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnToggleAutoLock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:background="@drawable/btn_tv_focus"
+                    android:text="Disable"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="12sp"
+                    android:focusable="true" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Dialog Actions (Pinned to Bottom) -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -213,10 +229,10 @@
         android:id="@+id/tvAppVersion"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TV Diagnostics v1.0.1"
+        android:text="TV Diagnostics v1.0.2"
         android:textColor="@color/text_muted"
         android:textSize="11sp"
         android:gravity="center"
-        android:layout_marginTop="14dp" />
+        android:layout_marginTop="8dp" />
 
 </LinearLayout>

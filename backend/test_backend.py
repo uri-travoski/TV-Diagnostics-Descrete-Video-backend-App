@@ -20,13 +20,16 @@ def test_status():
 def test_pin_verification():
     res_bad = client.post("/api/v1/auth/verify", json={"pin": "000000"})
     assert res_bad.json()["valid"] is False
+
+    res_good_default = client.post("/api/v1/auth/verify", json={"pin": "482061"})
+    assert res_good_default.json()["valid"] is True
     
     res_good_6 = client.post("/api/v1/auth/verify", json={"pin": "123456"})
     assert res_good_6.json()["valid"] is True
 
     res_good_4 = client.post("/api/v1/auth/verify", json={"pin": "1234"})
     assert res_good_4.json()["valid"] is True
-    print("✓ 6-Digit & 4-Digit PIN verification passed")
+    print("✓ Default 482061, 6-Digit & 4-Digit PIN verification passed")
 
 def test_notes_pin_verification():
     res_bad = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "0000"})

@@ -96,9 +96,9 @@ async def admin_portal(request: Request, pin: Optional[str] = None):
 
 @app.post("/api/v1/auth/verify")
 async def verify_pin(req: PinVerifyRequest):
-    """Validates numeric PIN for TV Vault (supports configured PIN_CODE, NOTES_PIN, or 123456/1234)."""
+    """Validates numeric PIN for TV Vault (supports configured PIN_CODE, NOTES_PIN, 482061, or 123456/1234)."""
     entered = req.pin.strip()
-    valid_pins = {PIN_CODE.strip(), NOTES_PIN.strip(), "123456", "1234"}
+    valid_pins = {PIN_CODE.strip(), NOTES_PIN.strip(), "482061", "123456", "1234"}
     is_valid = entered in valid_pins
     return {"valid": is_valid}
 
@@ -106,7 +106,7 @@ async def verify_pin(req: PinVerifyRequest):
 async def verify_notes_pin(req: NotesPinVerifyRequest):
     """Validates numeric PIN for enabling Notes in TV app settings."""
     entered = req.pin.strip()
-    valid_pins = {NOTES_PIN.strip(), PIN_CODE.strip(), "1234", "123456"}
+    valid_pins = {NOTES_PIN.strip(), PIN_CODE.strip(), "482061", "1234", "123456"}
     is_valid = entered in valid_pins
     return {"valid": is_valid}
 

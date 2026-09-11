@@ -241,10 +241,14 @@ class VaultActivity : AppCompatActivity() {
             btnVaultTags.text = "🏷 #${selectedTag}$countStr"
             btnVaultTags.setTextColor(ContextCompat.getColor(this, R.color.accent_blue))
             btnClearTagFilter.visibility = View.VISIBLE
+            btnVaultTags.nextFocusRightId = R.id.btnClearTagFilter
+            btnVaultSort.nextFocusLeftId = R.id.btnClearTagFilter
         } else {
-            btnVaultTags.text = "🏷 Tags: All"
+            btnVaultTags.text = "🏷 Tags"
             btnVaultTags.setTextColor(ContextCompat.getColor(this, R.color.text_white))
             btnClearTagFilter.visibility = View.GONE
+            btnVaultTags.nextFocusRightId = R.id.btnVaultSort
+            btnVaultSort.nextFocusLeftId = R.id.btnVaultTags
         }
     }
 

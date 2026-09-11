@@ -82,10 +82,10 @@ class TagFilterDialog(
                 ).apply {
                     marginEnd = 6
                 }
-                minWidth = 40
-                height = 36
+                minWidth = 44
+                height = 38
                 text = letter
-                textSize = 11f
+                textSize = 13f
                 setBackgroundResource(R.drawable.btn_tv_focus)
                 setTextColor(ContextCompat.getColor(context, R.color.text_white))
                 isFocusable = true
@@ -150,13 +150,14 @@ class TagFilterDialog(
             val btn = Button(context).apply {
                 val params = GridLayout.LayoutParams().apply {
                     width = 0
-                    height = 42
+                    height = 48
                     columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                    setMargins(4, 4, 4, 4)
+                    setMargins(6, 6, 6, 6)
                 }
                 layoutParams = params
                 text = "#$cleanTag (${tagItem.count})"
-                textSize = 11f
+                textSize = 14f
+                setPadding(12, 0, 12, 0)
                 setBackgroundResource(R.drawable.btn_tv_focus)
                 isFocusable = true
                 isClickable = true

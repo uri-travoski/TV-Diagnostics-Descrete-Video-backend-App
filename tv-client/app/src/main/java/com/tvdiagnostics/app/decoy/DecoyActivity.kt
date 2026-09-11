@@ -105,9 +105,8 @@ class DecoyActivity : AppCompatActivity() {
         val btnScreenTest = findViewById<Button>(R.id.btnScreenTest)
         val btnPingTest = findViewById<Button>(R.id.btnPingTest)
         val btnServerCode = findViewById<Button>(R.id.btnServerCode)
-        val btnSettings = findViewById<Button>(R.id.btnSettings)
 
-        listOf(btnScreenTest, btnPingTest, btnServerCode, btnSettings).forEach { btn ->
+        listOf(btnScreenTest, btnPingTest, btnServerCode).forEach { btn ->
             btn.setOnFocusChangeListener { v, hasFocus ->
                 v.animate()
                     .scaleX(if (hasFocus) 1.05f else 1.0f)
@@ -127,10 +126,6 @@ class DecoyActivity : AppCompatActivity() {
 
         btnServerCode.setOnClickListener {
             showPinDialog()
-        }
-
-        btnSettings.setOnClickListener {
-            showSettingsDialog()
         }
     }
 
@@ -167,11 +162,6 @@ class DecoyActivity : AppCompatActivity() {
             val intent = Intent(this, VaultActivity::class.java)
             startActivity(intent)
         }
-        dialog.show()
-    }
-
-    private fun showSettingsDialog() {
-        val dialog = SettingsDialog(this)
         dialog.show()
     }
 

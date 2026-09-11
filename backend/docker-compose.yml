@@ -10,7 +10,7 @@ services:
     ports:
       - "8090:8090"
     environment:
-      - PIN_CODE=123456            # 6-digit numeric PIN used to unlock Vault on TV
+      - PIN_CODE=482061            # Default numeric PIN used to unlock Vault on TV
       - NOTES_PIN=1234             # 4-digit numeric PIN used to unlock Notes on TV app
       - PORT=8090
       - SCAN_ON_STARTUP=true

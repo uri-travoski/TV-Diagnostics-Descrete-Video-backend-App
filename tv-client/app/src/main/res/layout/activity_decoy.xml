@@ -60,15 +60,6 @@
             android:focusable="true"
             android:layout_marginBottom="12dp" />
 
-        <Button
-            android:id="@+id/btnSettings"
-            android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:text="@string/btn_settings"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/text_muted"
-            android:focusable="true"
-            android:layout_marginTop="16dp" />
     </LinearLayout>
 
 

@@ -12,7 +12,7 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_SERVER_URL, value.trimEnd('/')).apply()
 
     var pinCode: String
-        get() = prefs.getString(KEY_PIN_CODE, "123456") ?: "123456"
+        get() = prefs.getString(KEY_PIN_CODE, DEFAULT_PIN_CODE) ?: DEFAULT_PIN_CODE
         set(value) = prefs.edit().putString(KEY_PIN_CODE, value).apply()
 
     var isVaultUnlocked: Boolean
@@ -37,6 +37,7 @@ class PreferencesManager(context: Context) {
         private const val KEY_IS_UNLOCKED = "is_vault_unlocked"
         private const val KEY_IS_NOTES_ENABLED = "is_notes_enabled"
         private const val KEY_IS_AUTO_LOCK_ENABLED = "is_auto_lock_enabled"
+        const val DEFAULT_PIN_CODE = "482061"
         const val DEFAULT_SERVER_URL = "http://tv-diagnostics:8090"
     }
 }
