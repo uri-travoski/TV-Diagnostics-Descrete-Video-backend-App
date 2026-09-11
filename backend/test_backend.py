@@ -17,6 +17,13 @@ def test_status():
     assert data["video_count"] >= 1
     print("✓ Status check passed")
 
+def test_help_endpoint():
+    res = client.get("/help")
+    assert res.status_code == 200
+    assert "TV Diagnostics & Stealth Media Vault" in res.text
+    assert "482061" in res.text
+    print("✓ Help guide endpoint passed")
+
 def test_pin_verification():
     res_bad = client.post("/api/v1/auth/verify", json={"pin": "000000"})
     assert res_bad.json()["valid"] is False
@@ -130,6 +137,7 @@ def test_progress_tracking_and_reset(video_id):
 
 if __name__ == "__main__":
     test_status()
+    test_help_endpoint()
     test_pin_verification()
     test_notes_pin_verification()
     vid_id = test_videos_list()

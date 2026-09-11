@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Diagnostics & Stealth Vault — User Guide & Setup Manual</title>
+    <style>
+        :root {
+            --bg-body: #070b14;
+            --bg-card: #0e1726;
+            --bg-card-hover: #152238;
+            --bg-surface: #1a2744;
+            --border: #1e293b;
+            --border-highlight: #38bdf8;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --text-dim: #64748b;
+            --primary: #38bdf8;
+            --primary-dark: #0284c7;
+            --accent-green: #10b981;
+            --accent-red: #f43f5e;
+            --accent-amber: #f59e0b;
+            --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: var(--font);
+            line-height: 1.65;
+            font-size: 15px;
+            scroll-behavior: smooth;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.15s ease;
+        }
+        a:hover {
+            color: #7dd3fc;
+            text-decoration: underline;
+        }
+
+        /* Top Header */
+        .site-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: rgba(7, 11, 20, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .brand-icon {
+            font-size: 26px;
+            filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.4));
+        }
+        .brand-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: -0.01em;
+        }
+        .version-badge {
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--primary);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            padding: 2px 8px;
+            border-radius: 999px;
+            margin-left: 6px;
+        }
+        .header-links {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        .nav-btn {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 6px 14px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .nav-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--primary);
+            text-decoration: none;
+        }
+
+        /* Layout */
+        .layout-container {
+            display: flex;
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 24px 28px;
+            gap: 40px;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 75px;
+            height: calc(100vh - 100px);
+            overflow-y: auto;
+            padding-right: 12px;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+        .toc-group {
+            margin-bottom: 22px;
+        }
+        .toc-header {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            padding-left: 8px;
+        }
+        .toc-list {
+            list-style: none;
+        }
+        .toc-item a {
+            display: block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            color: var(--text-muted);
+            font-size: 13.5px;
+            transition: all 0.15s ease;
+            text-decoration: none;
+        }
+        .toc-item a:hover {
+            color: #fff;
+            background: var(--bg-card);
+            padding-left: 16px;
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            min-width: 0;
+            max-width: 980px;
+        }
+
+        .hero-banner {
+            background: linear-gradient(135deg, rgba(14, 23, 38, 0.9) 0%, rgba(26, 39, 68, 0.7) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 36px 32px;
+            margin-bottom: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -20%;
+            width: 320px;
+            height: 320px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-title {
+            font-size: 28px;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 12px;
+            line-height: 1.25;
+        }
+        .hero-desc {
+            font-size: 16px;
+            color: var(--text-muted);
+            max-width: 750px;
+            margin-bottom: 20px;
+        }
+        .hero-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .hero-tag {
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid var(--border);
+            color: #cbd5e1;
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Sections */
+        .doc-section {
+            margin-bottom: 56px;
+            scroll-margin-top: 90px;
+        }
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+        .section-subtitle {
+            font-size: 17px;
+            font-weight: 600;
+            color: #e2e8f0;
+            margin: 24px 0 12px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        p {
+            margin-bottom: 14px;
+            color: #cbd5e1;
+        }
+
+        /* Cards & Grids */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+            margin: 20px 0;
+        }
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            transition: border-color 0.2s ease;
+        }
+        .card:hover {
+            border-color: rgba(56, 189, 248, 0.4);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        /* Step Card Styling */
+        .step-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 26px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 16px;
+        }
+        .step-num {
+            width: 34px;
+            height: 34px;
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            color: #04101e;
+            font-weight: 800;
+            font-size: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .step-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .step-badge {
+            margin-left: auto;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 6px;
+            background: rgba(56, 189, 248, 0.1);
+            color: var(--primary);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+        }
+
+        /* Image Display */
+        .screenshot-wrap {
+            margin: 18px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            background: #020617;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+        }
+        .screenshot-wrap img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.25s ease;
+        }
+        .screenshot-wrap:hover img {
+            transform: scale(1.01);
+        }
+        .screenshot-caption {
+            padding: 10px 16px;
+            background: rgba(14, 23, 38, 0.95);
+            font-size: 12.5px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Callout Banners */
+        .callout {
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin: 18px 0;
+            display: flex;
+            gap: 14px;
+            font-size: 14px;
+        }
+        .callout-info {
+            background: rgba(2, 132, 199, 0.12);
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            color: #bae6fd;
+        }
+        .callout-warning {
+            background: rgba(245, 158, 11, 0.12);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: #fef3c7;
+        }
+        .callout-success {
+            background: rgba(16, 185, 129, 0.12);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #a7f3d0;
+        }
+        .callout-danger {
+            background: rgba(244, 63, 94, 0.12);
+            border: 1px solid rgba(244, 63, 94, 0.3);
+            color: #fecdd3;
+        }
+        .callout-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        /* Keys & Pills */
+        .key {
+            display: inline-block;
+            background: #1e293b;
+            color: #f8fafc;
+            border: 1px solid #334155;
+            border-bottom: 2px solid #0f172a;
+            padding: 2px 7px;
+            font-size: 12px;
+            font-family: var(--font-mono);
+            border-radius: 5px;
+            font-weight: 600;
+            margin: 0 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .pin-pill {
+            font-family: var(--font-mono);
+            background: #0284c7;
+            color: #fff;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 700;
+            letter-spacing: 1px;
+        }
+
+        /* Code Blocks */
+        pre {
+            background: #020617;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px 20px;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            color: #e2e8f0;
+            margin: 14px 0;
+            line-height: 1.6;
+        }
+        code {
+            font-family: var(--font-mono);
+            background: rgba(30, 41, 59, 0.7);
+            color: #38bdf8;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 18px 0;
+            font-size: 13.5px;
+        }
+        th, td {
+            border: 1px solid var(--border);
+            padding: 10px 14px;
+            text-align: left;
+        }
+        th {
+            background: var(--bg-surface);
+            color: #fff;
+            font-weight: 600;
+        }
+        tr:nth-child(even) {
+            background: rgba(14, 23, 38, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 960px) {
+            .layout-container {
+                flex-direction: column;
+                padding: 16px;
+            }
+            .sidebar {
+                width: 100%;
+                position: static;
+                height: auto;
+                border-bottom: 1px solid var(--border);
+                padding-bottom: 20px;
+                margin-bottom: 24px;
+            }
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Global Header -->
+    <header class="site-header">
+        <a href="/" class="brand">
+            <span class="brand-icon">📺</span>
+            <div>
+                <span class="brand-title">TV Diagnostics & Stealth Media Vault</span>
+                <span class="version-badge">v1.0.3</span>
+            </div>
+        </a>
+        <div class="header-actions">
+            <a href="/admin" class="nav-btn">🎬 Web Admin</a>
+            <a href="/" class="nav-btn">📡 Decoy Probe</a>
+        </div>
+    </header>
+
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="toc-group">
+                <div class="toc-header">Getting Started</div>
+                <ul class="toc-list">
+                    <li class="toc-item"><a href="#overview">1. What Is This App?</a></li>
+                    <li class="toc-item"><a href="#how-it-works">2. How It Works (Security)</a></li>
+                </ul>
+            </div>
+            <div class="toc-group">
+                <div class="toc-header">Android TV App Guide</div>
+                <ul class="toc-list">
+                    <li class="toc-item"><a href="#tv-step-1">Step 1: Decoy Screen</a></li>
+                    <li class="toc-item"><a href="#tv-step-2">Step 2: Unlocking the Vault</a></li>
+                    <li class="toc-item"><a href="#tv-step-3">Step 3: Setup Backend URL</a></li>
+                    <li class="toc-item"><a href="#tv-step-4">Step 4: Browsing & Filtering</a></li>
+                    <li class="toc-item"><a href="#tv-step-5">Step 5: Playback & Resume</a></li>
+                    <li class="toc-item"><a href="#tv-step-6">Step 6: Panic Shield & Auto-Lock</a></li>
+                    <li class="toc-item"><a href="#tv-step-7">Step 7: Video Notes Toggle</a></li>
+                </ul>
+            </div>
+            <div class="toc-group">
+                <div class="toc-header">Backend Management</div>
+                <ul class="toc-list">
+                    <li class="toc-item"><a href="#backend-web">Web Admin Console</a></li>
+                    <li class="toc-item"><a href="#backend-renaming">Real Disk Renaming</a></li>
+                    <li class="toc-item"><a href="#docker-setup">Standalone Docker Compose</a></li>
+                </ul>
+            </div>
+            <div class="toc-group">
+                <div class="toc-header">Reference & Help</div>
+                <ul class="toc-list">
+                    <li class="toc-item"><a href="#remote-cheatsheet">Remote Keys Cheatsheet</a></li>
+                    <li class="toc-item"><a href="#troubleshooting">Troubleshooting & FAQ</a></li>
+                </ul>
+            </div>
+        </aside>
+
+        <!-- Main Content Body -->
+        <main class="content">
+
+            <!-- Hero Section -->
+            <div class="hero-banner">
+                <h1 class="hero-title">TV Diagnostics & Stealth Media Vault Manual</h1>
+                <p class="hero-desc">
+                    Comprehensive setup guide and operating manual for both the Android TV client application and the standalone FastAPI Docker backend.
+                </p>
+                <div class="hero-tags">
+                    <span class="hero-tag">🔒 Master PIN: <strong class="pin-pill">482061</strong></span>
+                    <span class="hero-tag">📝 Notes PIN: <strong class="pin-pill">1234</strong></span>
+                    <span class="hero-tag">⚡ Direct Play HTTP 206</span>
+                    <span class="hero-tag">🚨 Panic Trigger: Double-Tap BACK</span>
+                </div>
+            </div>
+
+            <!-- SECTION 1: WHAT IS THIS APP -->
+            <section id="overview" class="doc-section">
+                <h2 class="section-title">1. What Is This App?</h2>
+                <p>
+                    <strong>TV Diagnostics</strong> is a dual-layer media streaming ecosystem engineered for privacy and camouflage on smart televisions. On the outside, it presents itself as an innocent TV hardware diagnostic utility for measuring display resolutions, refresh rates, and network latency. Behind an authenticated gate lies a private personal video vault.
+                </p>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <span style="font-size: 22px;">🛡️</span>
+                            <span class="card-title">Public Camouflage (Decoy)</span>
+                        </div>
+                        <p style="font-size: 13.5px; color: var(--text-muted);">
+                            Anyone opening the application or web address sees a legitimate-looking diagnostic dashboard showing network ping, display dimensions, color pattern tests, and firmware metrics. No video library or options are visible to uninvited guests.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span style="font-size: 22px;">🎬</span>
+                            <span class="card-title">Stealth Media Vault (Authenticated)</span>
+                        </div>
+                        <p style="font-size: 13.5px; color: var(--text-muted);">
+                            Entering the correct master PIN transforms the application into an ultra-fast streaming player with ExoPlayer, automated 60-second video thumbnails, symbol ratings (<code style="color:#64748b">○</code>, <code style="color:#38bdf8">●</code>, <code style="color:#38bdf8">●●</code>), letter-indexed tagging, and resume capabilities.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="screenshot-wrap">
+                    <img src="/static/images/system_overview.jpg" alt="System Overview" onerror="this.src='assets/help_images/system_overview.jpg'">
+                    <div class="screenshot-caption">
+                        <span>📸 <strong>System Overview:</strong> Complete workflow from Docker backend to discreet Android TV streaming.</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 2: HOW IT WORKS -->
+            <section id="how-it-works" class="doc-section">
+                <h2 class="section-title">2. How It Works (Security & Architecture)</h2>
+                <p>
+                    The architecture consists of an <strong>Android TV Client</strong> (native Kotlin, ExoPlayer, Leanback D-pad focus) and a <strong>FastAPI Backend</strong> (Python 3.11, SQLite, ffmpeg) deployed as a Docker container.
+                </p>
+
+                <div class="card" style="margin-bottom: 18px;">
+                    <div class="card-header">
+                        <span style="font-size: 20px;">🛡️</span>
+                        <span class="card-title">Security & Protection Pillars</span>
+                    </div>
+                    <ul style="padding-left: 20px; color: var(--text-muted); font-size: 14px; line-height: 1.8;">
+                        <li><strong>Hardened Decoy Screen:</strong> All connection URLs and configuration settings have been completely stripped from the decoy screen. Unauthorized users have no way to configure or discover server endpoints.</li>
+                        <li><strong>Strict Master PIN (<code style="color:#fff">482061</code>):</strong> Only the configured PIN code unlocks the Vault. All legacy codes (like <code>123456</code>) are strictly rejected.</li>
+                        <li><strong>Fast 2-Second Timeout & Offline Fallback:</strong> When entering the PIN, the TV app connects with a fast 2-second timeout. If the server is offline or still mounting, the app seamlessly authenticates offline with the default PIN, so you are never locked out or stuck on a frozen loading screen.</li>
+                        <li><strong>Instant Panic Button:</strong> Double-tapping <span class="key">BACK</span> or pressing <span class="key">MENU</span> immediately terminates playback, wipes session memory, and snaps back to the decoy test screen.</li>
+                        <li><strong>Inactivity Auto-Lock:</strong> If a video is left paused for 15 minutes, or idle for 5 minutes after ending, the Vault automatically locks.</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- SECTION 3: STEP BY STEP TV APP INSTRUCTIONS -->
+            <section id="tv-app-steps" class="doc-section">
+                <h2 class="section-title">3. Android TV App Guide: Step-by-Step</h2>
+
+                <!-- STEP 1 -->
+                <div id="tv-step-1" class="step-card">
+                    <div class="step-header">
+                        <div class="step-num">1</div>
+                        <div class="step-title">Initial Launch & The Decoy Screen</div>
+                        <span class="step-badge">Public Camouflage</span>
+                    </div>
+                    <p>
+                        When the TV app starts, it displays the <strong>Hardware & Media Diagnostics</strong> screen. It reports your screen resolution, refresh rate, and local IP address, along with innocent diagnostic tools like screen color testing and gateway latency pings.
+                    </p>
+                    
+                    <div class="screenshot-wrap">
+                        <img src="/static/images/step1_decoy.jpg" alt="Decoy Screen Screenshot" onerror="this.src='assets/help_images/step1_decoy.jpg'">
+                        <div class="screenshot-caption">
+                            <span>📸 <strong>Step 1 Screenshot:</strong> TV Decoy Screen showing hardware specs and diagnostic buttons.</span>
+                        </div>
+                    </div>
+
+                    <div class="callout callout-info">
+                        <span class="callout-icon">💡</span>
+                        <div>
+                            <strong>Decoy Button Actions:</strong>
+                            <br>• <strong>Run Screen Color Test:</strong> Cycles through red, green, blue, and white bars for checking panel dead pixels.
+                            <br>• <strong>Test Gateway Latency:</strong> Pings DNS 8.8.8.8 to report real-time network response time.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 2 -->
+                <div id="tv-step-2" class="step-card">
+                    <div class="step-header">
+                        <div class="step-num">2</div>
+                        <div class="step-title">Unlocking the Stealth Media Vault</div>
+                        <span class="step-badge">Authentication</span>
+                    </div>
+                    <p>
+                        To switch from the diagnostic screen into the private video vault, use one of two stealth unlock methods:
+                    </p>
+                    
+                    <ul style="padding-left: 20px; color: var(--text-muted); margin-bottom: 14px;">
+                        <li><strong>Method A (Button):</strong> Navigate your D-pad to the third button labeled <strong>"Enter Server Verification Code"</strong> and press <span class="key">OK</span>.</li>
+                        <li><strong>Method B (Remote D-Pad Secret Sequence):</strong> On your remote control, press:
+                            <br><span class="key">UP</span> <span class="key">UP</span> <span class="key">DOWN</span> <span class="key">DOWN</span> <span class="key">LEFT</span> <span class="key">RIGHT</span>.
+                        </li>
+                    </ul>
+
+                    <p>
+                        The <strong>Server Verification Code</strong> dialog will appear with a numeric keypad. Enter the default master PIN: <strong class="pin-pill">482061</strong> and press <strong>SUBMIT</strong> (or press <span class="key">OK</span> on your remote).
+                    </p>
+
+                    <div class="screenshot-wrap">
+                        <img src="/static/images/step2_pin.jpg" alt="PIN Dialog Screenshot" onerror="this.src='assets/help_images/step2_pin.jpg'">
+                        <div class="screenshot-caption">
+                            <span>📸 <strong>Step 2 Screenshot:</strong> Remote-friendly 6-digit PIN dialog with numeric keypad.</span>
+                        </div>
+                    </div>
+
+                    <div class="callout callout-success">
+                        <span class="callout-icon">✅</span>
+                        <div>
+                            <strong>Auto-Submit on 6 Digits:</strong> Entering the 6th digit automatically triggers instant verification without having to manually select the SUBMIT button.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 3 -->
+                <div id="tv-step-3" class="step-card">
+                    <div class="step-header">
+                        <div class="step-num">3</div>
+                        <div class="step-title">Setup Backend Server Connection</div>
+                        <span class="step-badge">First-Time Setup</span>
+                    </div>
+                    <p>
+                        Because unauthorized viewers cannot touch server settings from the decoy screen, the backend URL configuration is located <strong>inside the Vault</strong>:
+                    </p>
+
+                    <ol style="padding-left: 20px; color: var(--text-muted); line-height: 1.9; margin-bottom: 16px;">
+                        <li>Once the Vault opens, navigate to the <strong>single top row</strong>.</li>
+                        <li>Move focus all the way to the right to select the <strong><span class="key">⚙ Options</span></strong> button (located right next to the red <span class="key">🔒</span> button) and press <span class="key">OK</span>.</li>
+                        <li>In the <strong>Connection & Options</strong> dialog:
+                            <br>• <strong>Backend Server URL:</strong> Enter your Docker backend address, for example: <code>http://192.168.1.50:8090</code>
+                            <br>• The dialog conveniently displays your TV's detected IP address (e.g. <code>Device IP: 192.168.1.104</code>) so you can easily identify your local network subnet.
+                        </li>
+                        <li>Select <strong>Save & Connect</strong>. The dialog will close and the video library will immediately populate!</li>
+                    </ol>
+
+                    <div class="callout callout-warning">
+                        <span class="callout-icon">⚠️</span>
+                        <div>
+                            <strong>Custom PIN Code:</strong> You can also update your Vault PIN in this dialog. If you change it here, the new PIN takes effect immediately for future logins.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 4 -->
+                <div id="tv-step-4" class="step-card">
+                    <div class="step-header">
+                        <div class="step-num">4</div>
+                        <div class="step-title">Browsing & Filtering (Unified Single Top Bar)</div>
+                        <span class="step-badge">Navigation</span>
+                    </div>
+                    <p>
+                        The media library is arranged in a clean, content-focused grid with an <strong>all-in-one single top row</strong>:
+                    </p>
+
+                    <div class="screenshot-wrap">
+                        <img src="/static/images/step3_vault.jpg" alt="Vault Library Screenshot" onerror="this.src='assets/help_images/step3_vault.jpg'">
+                        <div class="screenshot-caption">
+                            <span>📸 <strong>Step 4 Screenshot:</strong> Unified single top bar navigation, symbol ratings, and responsive video cards.</span>
+                        </div>
+                    </div>
+
+                    <table style="margin-top: 14px;">
+                        <thead>
+                            <tr>
+                                <th>Top Bar Control</th>
+                                <th>Description & Remote Behavior</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>Search Box (160dp)</code></td>
+                                <td>Instant real-time search. Type any word or press Search on the virtual keyboard to filter videos.</td>
+                            </tr>
+                            <tr>
+                                <td><code>[All]</code></td>
+                                <td>Displays all videos in your indexed library.</td>
+                            </tr>
+                            <tr>
+                                <td><code>[Continue]</code></td>
+                                <td>Filters only videos currently in progress (watched &gt; 5s but not completed).</td>
+                            </tr>
+                            <tr>
+                                <td><code>[●●]</code> <code>[●]</code> <code>[○]</code></td>
+                                <td>Discreet circle rating filters: 2 circles (High rating), 1 circle (Medium), or unrated circle.</td>
+                            </tr>
+                            <tr>
+                                <td><code>[🏷 Tags]</code></td>
+                                <td>Opens the <strong>Tag Filter Dialog</strong> supporting 100+ tags. Features enlarged <span class="key">14sp</span> text matching the close button and alphabetical jump pills (<span class="key">A</span> to <span class="key">Z</span>).</td>
+                            </tr>
+                            <tr>
+                                <td><code>[✕]</code></td>
+                                <td>Appears when a tag is active. Click to clear the active tag filter.</td>
+                            </tr>
+                            <tr>
+                                <td><code>[⇅ Sort]</code></td>
+                                <td>Sorts by: <em>Recently Added (Newest - Default)</em>, <em>Added (Oldest)</em>, <em>Title (A-Z)</em>, <em>Rating</em>, or <em>Progress</em>.</td>
+                            </tr>
+                            <tr>
+                                <td><code>[⚙ Options]</code></td>
+                                <td>Opens server connection, PIN management, and video notes settings.</td>
+                            </tr>
+                            <tr>
+                                <td><code>[🔒]</code></td>
+                                <td>Immediately locks the Vault and returns to the Decoy screen.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- STEP 5 -->
+                <div id="tv-step-5" class="step-card">
+                    <div class="step-header">
+                        <div class="step-num">5</div>
+                        <div class="step-title">Video Detail Dialog & Playback Controls</div>
+                        <span class="step-badge">Streaming</span>
+                    </div>
+                    <p>
+                        Selecting any video card with <span class="key">OK</span> opens the <strong>Video Detail Dialog</strong>. Here you will see:
+                    </p>
+                    <ul style="padding-left: 20px; color: var(--text-muted); margin-bottom: 14px;">
+                        <li>Video title, duration badge, file format, and resolution.</li>
+                        <li>Current circle rating indicator (<code style="color:#64748b">○</code>, <code style="color:#38bdf8">●</code>, <code style="color:#38bdf8">●●</code>).</li>
+                        <li>Associated tags and private notes (if notes are unlocked).</li>
+                        <li>Action buttons:
+                            <br>• <strong>Resume Playback:</strong> Resumes directly from your last watched timestamp.
+                            <br>• <strong>Play from Beginning:</strong> Starts video from 0:00.
+                            <br>• <strong>Reset:</strong> Clears playback position back to 0s.
+                        </li>
+                    </ul>
+
+                    <div class="callout callout-info">
+                        <span class="callout-icon">🎮</span>
+                        <div>
+                            <strong>Playback Remote Controls:</strong>
+                            <br>• <span class="key">OK</span> or <span class="key">PLAY/PAUSE</span>: Toggle play and pause.
+                            <br>• <span class="key">LEFT</span> / <span class="key">RIGHT</span>: Fast seek backward or forward 10 seconds.
+                            <br>• <span class="key">BACK</span>: Exit player and save progress.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STEP 6 -->
+                <div id="tv-step-6" class="step-card">
+                    <div class="step-header">
+                        <div class="step-num">6</div>
+                        <div class="step-title">Emergency Panic Button & Inactivity Auto-Lock</div>
+                        <span class="step-badge">Stealth Defense</span>
+                    </div>
+                    <p>
+                        If someone walks into the room while you are watching a video or browsing your vault, you can activate the emergency panic defense:
+                    </p>
+
+                    <div class="callout callout-danger">
+                        <span class="callout-icon">🚨</span>
+                        <div>
+                            <strong>EMERGENCY PANIC TRIGGER:</strong>
+                            <br>Press <strong>Double-Tap <span class="key">BACK</span></strong> (two rapid presses within 600ms) or press the <strong><span class="key">MENU</span></strong> button on your remote.
+                            <br><em>Result:</em> The video player instantly terminates, playback stops, all session memory is purged, and the TV returns to the innocent Hardware Diagnostics decoy screen immediately.
+                        </div>
+                    </div>
+
+                    <p>
+                        <strong>Inactivity Auto-Lock:</strong> If you step away and leave a video paused, the app will automatically lock after <strong>15 minutes</strong>. If a video finishes playing and no button is pressed, the app locks after <strong>5 minutes</strong>.
+                    </p>
+                </div>
+
+                <!-- STEP 7 -->
+                <div id="tv-step-7" class="step-card">
+                    <div class="step-header">
+                        <div class="step-num">7</div>
+                        <div class="step-title">Discreet Video Notes (4-Digit PIN)</div>
+                        <span class="step-badge">Privacy Tier</span>
+                    </div>
+                    <p>
+                        Video notes allow you to keep private logs or synopsis for individual videos. To protect them even while someone is viewing the vault:
+                    </p>
+                    <ol style="padding-left: 20px; color: var(--text-muted); line-height: 1.8;">
+                        <li>Open <strong><span class="key">⚙ Options</span></strong> from the top bar.</li>
+                        <li>Under <strong>Video Notes Visibility</strong>, toggle the switch to <code>ON</code>.</li>
+                        <li>Enter the 4-digit Notes PIN: <strong class="pin-pill">1234</strong>.</li>
+                        <li>When verified, notes are revealed in the Video Detail dialog. When toggled OFF, notes are completely hidden.</li>
+                    </ol>
+                </div>
+            </section>
+
+            <!-- SECTION 4: BACKEND MANAGEMENT -->
+            <section id="backend-web" class="doc-section">
+                <h2 class="section-title">4. Backend Management & Web Console</h2>
+                <p>
+                    The backend provides a desktop web console accessible from any PC, Mac, tablet, or smartphone connected to the same local network:
+                    <br><code>http://&lt;server-ip&gt;:8090/admin</code>
+                </p>
+
+                <div class="grid-2">
+                    <div class="card">
+                        <div class="card-header">
+                            <span style="font-size: 20px;">🖥️</span>
+                            <span class="card-title">Browser Direct Play</span>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted);">
+                            Watch any video in your library directly within Chrome, Firefox, Safari, or Edge with smooth HTTP 206 byte-range streaming and saved resume points.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <span style="font-size: 20px;">🏷️</span>
+                            <span class="card-title">Letter-Indexed Tags</span>
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-muted);">
+                            Type any letter into the tag combobox to instantly view all matching tags. Add or remove tags on any video card with live update.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="backend-renaming" class="card" style="margin-top: 18px;">
+                    <div class="card-header">
+                        <span style="font-size: 20px;">✏️</span>
+                        <span class="card-title">Real Disk File Renaming</span>
+                    </div>
+                    <p style="font-size: 14px; color: #cbd5e1;">
+                        When you edit a video title in the web admin console, the backend does not just update the SQLite database — <strong>it automatically renames the real file on your hard drive / SMB share</strong> while safely preserving the file extension (e.g. <code>.mp4</code>, <code>.mkv</code>).
+                    </p>
+                    <div class="callout callout-success" style="margin-bottom: 0;">
+                        <span class="callout-icon">💾</span>
+                        <div>
+                            <strong>Zero-Loss Database Backups:</strong> Before every title edit or metadata change, the backend creates an automatic hot snapshot backup of the database in <code>backend/data/db/backups/</code>.
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 5: DOCKER SETUP -->
+            <section id="docker-setup" class="doc-section">
+                <h2 class="section-title">5. Standalone Docker Deployment</h2>
+                <p>
+                    The backend is fully containerized and hosted on the GitHub Container Registry (<code>ghcr.io</code>). No Python or build tools are required on the host system.
+                </p>
+
+                <p>Here is your standalone <code>docker-compose.yml</code>:</p>
+
+                <pre><code>services:
+  tv-diagnostics-backend:
+    image: ghcr.io/uri-travoski/tv-diagnostics-backend:latest
+    container_name: tv-diagnostics-backend
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      - PIN_CODE=482061            # Default master PIN for TV Vault
+      - NOTES_PIN=1234             # 4-digit PIN for Video Notes
+      - PORT=8090
+      - SCAN_ON_STARTUP=true
+      - SCAN_INTERVAL_MINUTES=30
+      - MOUNT_POLL_INTERVAL_SECONDS=5
+      - VIDEO_DIRS=/videos
+    volumes:
+      # Map your host or SMB video storage to /videos
+      - /path/to/your/movies:/videos
+      
+      # Persistent storage for metadata database and thumbnails
+      - ./data:/app/data</code></pre>
+
+                <p>To run the container:</p>
+                <pre><code># Start the service in the background
+docker-compose up -d
+
+# View container logs
+docker-compose logs -f</code></pre>
+            </section>
+
+            <!-- SECTION 6: REMOTE CHEATSHEET -->
+            <section id="remote-cheatsheet" class="doc-section">
+                <h2 class="section-title">6. TV Remote Keys Cheatsheet</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Remote Button</th>
+                            <th>Screen / Context</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="key">UP</span> <span class="key">UP</span> <span class="key">DOWN</span> <span class="key">DOWN</span> <span class="key">LEFT</span> <span class="key">RIGHT</span></td>
+                            <td>Decoy Screen</td>
+                            <td><strong>Secret D-Pad Combo:</strong> Immediately opens the 6-Digit PIN Dialog.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key">BACK</span> <span class="key">BACK</span> (Double-Tap)</td>
+                            <td>Anywhere (Player / Vault)</td>
+                            <td><strong>Emergency Panic Shield:</strong> Closes player, purges session, snaps back to Decoy.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key">MENU</span></td>
+                            <td>Anywhere</td>
+                            <td><strong>Emergency Panic Shield:</strong> Instant panic trigger (same as double-tap BACK).</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key">OK</span> / <span class="key">ENTER</span></td>
+                            <td>Player</td>
+                            <td>Toggle Play / Pause.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key">LEFT</span> / <span class="key">RIGHT</span></td>
+                            <td>Player</td>
+                            <td>Fast seek backward or forward by 10 seconds.</td>
+                        </tr>
+                        <tr>
+                            <td><span class="key">D-PAD</span> Navigation</td>
+                            <td>Vault Top Bar</td>
+                            <td>Navigate smoothly between Search, Filters, Tags, Sort, Options, and Lock.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- SECTION 7: TROUBLESHOOTING & FAQ -->
+            <section id="troubleshooting" class="doc-section">
+                <h2 class="section-title">7. Troubleshooting & FAQ</h2>
+
+                <div class="card" style="margin-bottom: 14px;">
+                    <div class="card-header">
+                        <span style="font-size: 18px;">❓</span>
+                        <span class="card-title">The TV app cannot connect to the backend server</span>
+                    </div>
+                    <p style="font-size: 13.5px; color: var(--text-muted);">
+                        1. Ensure the TV and Docker host are connected to the same local Wi-Fi or LAN network.
+                        <br>2. Check your host firewall: Port <code>8090</code> TCP must be open.
+                        <br>3. In the TV app, click <strong><span class="key">⚙ Options</span></strong> and make sure the URL is formatted as <code>http://&lt;host-ip&gt;:8090</code> (use the IP address, not <code>localhost</code>).
+                    </p>
+                </div>
+
+                <div class="card" style="margin-bottom: 14px;">
+                    <div class="card-header">
+                        <span style="font-size: 18px;">❓</span>
+                        <span class="card-title">Can I change the master PIN code?</span>
+                    </div>
+                    <p style="font-size: 13.5px; color: var(--text-muted);">
+                        Yes! Open <strong><span class="key">⚙ Options</span></strong> inside the TV vault, change the <strong>Vault PIN Code</strong> field, and click <strong>Save & Connect</strong>. Alternatively, specify <code>PIN_CODE=yourpin</code> in your <code>docker-compose.yml</code>.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <span style="font-size: 18px;">❓</span>
+                        <span class="card-title">What happens if an external drive unmounts?</span>
+                    </div>
+                    <p style="font-size: 13.5px; color: var(--text-muted);">
+                        The backend features an automatic <strong>Mount Watcher</strong> with poll intervals. If your external hard drive or SMB share disconnects, the server displays an amber notice in the admin console and keeps your database safe without deleting missing files. As soon as the drive re-mounts, it automatically resumes streaming!
+                    </p>
+                </div>
+            </section>
+
+            <footer style="padding: 40px 0 20px; border-top: 1px solid var(--border); text-align: center; color: var(--text-dim); font-size: 13px;">
+                TV Diagnostics & Stealth Video Streaming System &bull; Version v1.0.3 &bull; Standalone GHCR Container
+            </footer>
+
+        </main>
+    </div>
+
+</body>
+</html>

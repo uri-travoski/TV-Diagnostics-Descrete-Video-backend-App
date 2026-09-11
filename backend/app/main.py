@@ -93,6 +93,11 @@ async def admin_portal(request: Request, pin: Optional[str] = None):
     """Media library management portal."""
     return templates.TemplateResponse(request, "admin.html", {"version": APP_VERSION})
 
+@app.get("/help", response_class=HTMLResponse)
+async def help_portal(request: Request):
+    """Interactive user manual and TV app setup guide with screenshots."""
+    return templates.TemplateResponse(request, "help.html", {"version": APP_VERSION})
+
 
 @app.post("/api/v1/auth/verify")
 async def verify_pin(req: PinVerifyRequest):
