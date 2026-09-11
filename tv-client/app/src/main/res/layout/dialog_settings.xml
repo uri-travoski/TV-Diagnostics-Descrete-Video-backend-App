@@ -229,7 +229,7 @@
         android:id="@+id/tvAppVersion"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="TV Diagnostics v1.0.2"
+        android:text="TV Diagnostics v1.0.3"
         android:textColor="@color/text_muted"
         android:textSize="11sp"
         android:gravity="center"

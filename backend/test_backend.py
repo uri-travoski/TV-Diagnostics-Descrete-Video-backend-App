@@ -24,12 +24,13 @@ def test_pin_verification():
     res_good_default = client.post("/api/v1/auth/verify", json={"pin": "482061"})
     assert res_good_default.json()["valid"] is True
     
-    res_good_6 = client.post("/api/v1/auth/verify", json={"pin": "123456"})
-    assert res_good_6.json()["valid"] is True
+    # 123456 and 1234 must be strictly rejected
+    res_rejected_6 = client.post("/api/v1/auth/verify", json={"pin": "123456"})
+    assert res_rejected_6.json()["valid"] is False
 
-    res_good_4 = client.post("/api/v1/auth/verify", json={"pin": "1234"})
-    assert res_good_4.json()["valid"] is True
-    print("✓ Default 482061, 6-Digit & 4-Digit PIN verification passed")
+    res_rejected_4 = client.post("/api/v1/auth/verify", json={"pin": "1234"})
+    assert res_rejected_4.json()["valid"] is False
+    print("✓ Default 482061 passed, 123456 & 1234 strictly rejected")
 
 def test_notes_pin_verification():
     res_bad = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "0000"})
@@ -38,9 +39,10 @@ def test_notes_pin_verification():
     res_good_4 = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "1234"})
     assert res_good_4.json()["valid"] is True
 
-    res_good_6 = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "123456"})
-    assert res_good_6.json()["valid"] is True
-    print("✓ 4-Digit & 6-Digit Notes PIN verification passed")
+    # 123456 must be rejected for notes pin
+    res_rejected_6 = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "123456"})
+    assert res_rejected_6.json()["valid"] is False
+    print("✓ Notes PIN 1234 passed, 123456 strictly rejected")
 
 def test_videos_list():
     res = client.get("/api/v1/videos")

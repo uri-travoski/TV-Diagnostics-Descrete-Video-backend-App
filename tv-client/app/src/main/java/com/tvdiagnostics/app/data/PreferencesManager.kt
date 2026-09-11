@@ -12,7 +12,14 @@ class PreferencesManager(context: Context) {
         set(value) = prefs.edit().putString(KEY_SERVER_URL, value.trimEnd('/')).apply()
 
     var pinCode: String
-        get() = prefs.getString(KEY_PIN_CODE, DEFAULT_PIN_CODE) ?: DEFAULT_PIN_CODE
+        get() {
+            val stored = prefs.getString(KEY_PIN_CODE, DEFAULT_PIN_CODE) ?: DEFAULT_PIN_CODE
+            if (stored == "123456" || stored == "1234") {
+                prefs.edit().putString(KEY_PIN_CODE, DEFAULT_PIN_CODE).apply()
+                return DEFAULT_PIN_CODE
+            }
+            return stored
+        }
         set(value) = prefs.edit().putString(KEY_PIN_CODE, value).apply()
 
     var isVaultUnlocked: Boolean
