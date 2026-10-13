@@ -7,7 +7,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", str(BASE_DIR / "data")))
 DB_DIR = DATA_DIR / "db"
 THUMBNAILS_DIR = DATA_DIR / "thumbnails"
 
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 
 # Ensure directories exist
 DB_DIR.mkdir(parents=True, exist_ok=True)
@@ -23,7 +23,13 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8090"))
 
 # Security
-NOTES_PIN = os.getenv("NOTES_PIN", "1234")  # 4-digit PIN for TV Notes visibility unlock
+# PIN that shows Notes on the TV. Only this PIN works; with none set, Notes can't be turned on.
+NOTES_PIN = os.getenv("NOTES_PIN", "").strip()
+
+# TV code guessing: this many wrong codes in a row lock code entry on that TV (its IP address)
+# for CODE_LOCKOUT_MINUTES; every further lockout doubles, up to a day. A correct code resets it.
+CODE_MAX_ATTEMPTS = int(os.getenv("CODE_MAX_ATTEMPTS", "4"))
+CODE_LOCKOUT_MINUTES = int(os.getenv("CODE_LOCKOUT_MINUTES", "15"))
 
 # Admin console login (/admin and every API call made without a TV session token).
 # With no ADMIN_PASSWORD set, the console stays locked.

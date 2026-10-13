@@ -10,7 +10,7 @@ from typing import Dict, Optional
 
 from fastapi import Request
 
-from .config import ADMIN_USER, ADMIN_PASSWORD, ADMIN_SESSION_HOURS
+from .config import ADMIN_USER, ADMIN_PASSWORD, ADMIN_SESSION_HOURS, CODE_MAX_ATTEMPTS, CODE_LOCKOUT_MINUTES
 from .database import get_session_secret
 
 COOKIE_NAME = "tvd_admin"
@@ -82,6 +82,59 @@ class LoginLimiter:
 
 
 login_limiter = LoginLimiter()
+
+
+class CodeLimiter:
+    """
+    TV code guessing: after `max_attempts` wrong codes in a row a TV (IP address) is locked out;
+    once the lockout ends it gets `max_attempts` new tries, and each further lockout doubles.
+    A correct code, or an unlock from the admin console, clears it.
+    """
+    MAX_LOCK_SECONDS = 24 * 3600
+
+    def __init__(self, max_attempts: int, lock_minutes: int):
+        self.max_attempts = max(1, max_attempts)
+        self.base_lock = max(1, lock_minutes) * 60
+        self._failures: Dict[str, int] = {}
+        self._lockouts: Dict[str, int] = {}
+        self._locked_until: Dict[str, float] = {}
+        self._lock = threading.Lock()
+
+    def seconds_locked(self, ip: str) -> int:
+        with self._lock:
+            return max(0, int(self._locked_until.get(ip, 0) - time.time() + 0.999))
+
+    def failed(self, ip: str) -> int:
+        """Records a wrong code; returns the lockout in seconds it caused (0 if tries remain)."""
+        with self._lock:
+            n = self._failures.get(ip, 0) + 1
+            if n < self.max_attempts:
+                self._failures[ip] = n
+                return 0
+            self._failures[ip] = 0
+            lockouts = self._lockouts.get(ip, 0)
+            self._lockouts[ip] = lockouts + 1
+            seconds = min(self.MAX_LOCK_SECONDS, self.base_lock * 2 ** lockouts)
+            self._locked_until[ip] = time.time() + seconds
+            return seconds
+
+    def attempts_left(self, ip: str) -> int:
+        with self._lock:
+            return self.max_attempts - self._failures.get(ip, 0)
+
+    def clear(self, ip: str) -> None:
+        with self._lock:
+            self._failures.pop(ip, None)
+            self._lockouts.pop(ip, None)
+            self._locked_until.pop(ip, None)
+
+    def active_lockouts(self) -> Dict[str, int]:
+        now = time.time()
+        with self._lock:
+            return {ip: int(until - now + 0.999) for ip, until in self._locked_until.items() if until > now}
+
+
+code_limiter = CodeLimiter(CODE_MAX_ATTEMPTS, CODE_LOCKOUT_MINUTES)
 
 
 def client_ip(request: Request) -> str:

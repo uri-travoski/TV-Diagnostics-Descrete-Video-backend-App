@@ -2,7 +2,7 @@ FROM python:3.11-slim
 
 LABEL org.opencontainers.image.source="https://github.com/uri-travoski/TV-Diagnostics-Descrete-Video-backend-App"
 LABEL org.opencontainers.image.description="TV Diagnostics Descrete Video backend+App"
-LABEL org.opencontainers.image.version="1.2.0"
+LABEL org.opencontainers.image.version="1.2.1"
 
 # Install ffmpeg and curl for media probe, thumbnail generation, and healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \

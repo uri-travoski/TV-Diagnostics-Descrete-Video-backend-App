@@ -16,7 +16,7 @@ services:
       # - USER2_DIRS=/videos/user2
       - ADMIN_USER=admin           # Login for the /admin console
       - ADMIN_PASSWORD=change-me   # Required: without it the console stays locked
-      - NOTES_PIN=1234             # 4-digit numeric PIN used to unlock Notes on TV app
+      - NOTES_PIN=4891             # 4-digit PIN that shows Notes on the TV (only this PIN works)
       - PORT=8090
       - SCAN_ON_STARTUP=true
       - SCAN_INTERVAL_MINUTES=30

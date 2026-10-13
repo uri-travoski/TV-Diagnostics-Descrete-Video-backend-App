@@ -92,7 +92,8 @@ object ApiClient {
 
     sealed class PinResult {
         data class Success(val session: Session) : PinResult()
-        object Invalid : PinResult()
+        data class Invalid(val attemptsLeft: Int?) : PinResult()
+        data class Locked(val seconds: Int) : PinResult()
         object Offline : PinResult()
     }
 
@@ -109,10 +110,11 @@ object ApiClient {
                 if (!response.isSuccessful) return@withContext PinResult.Offline
                 val bodyStr = response.body?.string() ?: return@withContext PinResult.Offline
                 val parsed = gson.fromJson(bodyStr, PinVerifyResponse::class.java)
-                if (parsed.valid && parsed.token != null && parsed.userId != null) {
-                    PinResult.Success(Session(parsed.userId, parsed.userName ?: "", parsed.token, parsed.sessionId ?: ""))
-                } else {
-                    PinResult.Invalid
+                when {
+                    parsed.valid && parsed.token != null && parsed.userId != null ->
+                        PinResult.Success(Session(parsed.userId, parsed.userName ?: "", parsed.token, parsed.sessionId ?: ""))
+                    (parsed.lockedSeconds ?: 0) > 0 -> PinResult.Locked(parsed.lockedSeconds ?: 0)
+                    else -> PinResult.Invalid(parsed.attemptsLeft)
                 }
             }
         } catch (e: Exception) {
@@ -178,9 +180,8 @@ object ApiClient {
         }
     }
 
+    /** Only the backend's NOTES_PIN unlocks Notes; offline, nothing does. */
     suspend fun verifyNotesPin(pin: String): Boolean = withContext(Dispatchers.IO) {
-        val isKnownNotes = (pin == "1234")
-
         try {
             val json = gson.toJson(PinVerifyRequest(pin))
             val req = Request.Builder()
@@ -188,15 +189,13 @@ object ApiClient {
                 .post(json.toRequestBody(JSON_MEDIA_TYPE))
                 .build()
 
-            val response = fastClient.newCall(req).execute()
-            if (!response.isSuccessful) return@withContext isKnownNotes
-            val bodyStr = response.body?.string() ?: return@withContext isKnownNotes
-            val parsed = gson.fromJson(bodyStr, PinVerifyResponse::class.java)
-            if (parsed.valid) return@withContext true
-            return@withContext false
+            fastClient.newCall(req).execute().use { response ->
+                if (!response.isSuccessful) return@withContext false
+                val bodyStr = response.body?.string() ?: return@withContext false
+                gson.fromJson(bodyStr, PinVerifyResponse::class.java).valid
+            }
         } catch (e: Exception) {
-            // Offline fallback
-            return@withContext isKnownNotes
+            false
         }
     }
 

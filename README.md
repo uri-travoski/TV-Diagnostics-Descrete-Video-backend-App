@@ -50,7 +50,7 @@ services:
       - USER2_DIRS=/videos/user2   # Comma-separated folders for user 2 (a folder may be in both)
       - ADMIN_USER=admin           # Login for the /admin console
       - ADMIN_PASSWORD=change-me   # Required: without it the console stays locked
-      - NOTES_PIN=1234             # Secret 4-digit numeric PIN for TV Notes toggle unlock
+      - NOTES_PIN=4891             # 4-digit PIN that shows Notes on the TV (only this PIN; unset = Notes stay off)
       - PORT=8090
       - SCAN_ON_STARTUP=true
       - SCAN_INTERVAL_MINUTES=30
@@ -59,6 +59,8 @@ services:
       # - WATCH_FOLDERS=true             # Pick up added/removed videos within seconds
       # - PREGENERATE_PREVIEWS=true      # Build all 7-second preview frames after each scan
       # - ACTIVITY_RETENTION_DAYS=180    # How long the activity log keeps entries
+      # - CODE_MAX_ATTEMPTS=4            # Wrong TV codes in a row before that TV is locked out
+      # - CODE_LOCKOUT_MINUTES=15        # First lockout; each further one doubles (max 1 day)
     volumes:
       # Mount each user's host/SMB video folder (read-only recommended)
       - /mnt/storage/user1_videos:/videos/user1:ro
@@ -149,6 +151,7 @@ When opened on the TV, the app appears as **"TV Diagnostics"** with a generic ci
 ### 2. Unlocking the Vault (6-Digit PIN)
 To access the private media collection:
 - **Method 1**: Click the **"Server Diagnostic Code"** button on the main menu, and enter your **6-digit code** using the D-pad keypad or remote numeric keys (0–9). The code decides whose library opens: user 1 (default `002007`) or user 2 (default `482061`).
+- **Wrong codes**: the prompt shows how many tries are left. The 4th wrong code in a row locks code entry on that TV for 15 minutes (then 30, 60... up to a day); not even the right code works until it ends. A correct code resets the count, and **Unlock now** on `/admin` lifts a lockout right away. Every wrong code and lockout is in the activity log.
 - **Changing your code**: in the vault, **⚙ → Change My Code**. A forgotten code is reset to its default with **Reset code** on the backend `/admin` page (never from the TV).
 - **First setup on a new TV**: the code prompt has a **⚙ Server** button to enter the backend address before the first unlock.
 - **Leaving the app locks it**: pressing HOME, switching apps or the screen turning off closes the library and player; coming back always asks for the code, never shows the last video. BACK from the library also locks.
@@ -159,7 +162,7 @@ To access the private media collection:
 ### 3. Notes Security Toggle (4-Digit PIN)
 - Under **Settings / Connection & Options** (in Decoy mode or Vault top bar), the user can view the **Video Notes Feature** status.
 - **Default State**: Notes are **OFF / Hidden** by default in the TV app.
-- **Enabling Notes**: Clicking "Enable Notes" displays a 4-digit PIN dialog. Entering the 4-digit PIN (default: `1234`, set in `docker-compose.yml`) unlocks the notes feature.
+- **Enabling Notes**: Clicking "Enable Notes" displays a 4-digit PIN dialog. Only the 4-digit `NOTES_PIN` from `docker-compose.yml` unlocks the notes feature (there is no built-in default; without `NOTES_PIN` Notes can't be turned on).
 - **Disabling Notes**: Clicking "Disable Notes" immediately hides notes again without requiring a PIN.
 
 ### 4. Vault Media Browser

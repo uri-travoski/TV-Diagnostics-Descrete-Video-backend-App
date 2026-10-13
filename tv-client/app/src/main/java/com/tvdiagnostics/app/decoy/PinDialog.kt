@@ -99,6 +99,14 @@ class PinDialog(
         findViewById<Button?>(R.id.btnPinCancel)?.isEnabled = enabled
     }
 
+    /** Too many wrong codes: the backend refuses codes from this TV for a while (an admin can lift it). */
+    private fun showLocked(seconds: Int) {
+        val minutes = (seconds + 59) / 60
+        tvError.setTextColor(ContextCompat.getColor(context, R.color.danger_red))
+        tvError.text = if (minutes > 1) "Too many wrong codes. Try again in $minutes min" else "Too many wrong codes. Try again in a minute"
+        tvError.visibility = View.VISIBLE
+    }
+
     private fun appendDigit(d: String) {
         if (isVerifying) return
         if (pinBuilder.length < 6) {
@@ -150,17 +158,21 @@ class PinDialog(
             if (result is ApiClient.PinResult.Success) {
                 dismiss()
                 onSuccess(result.session)
-            } else {
-                tvError.setTextColor(ContextCompat.getColor(context, R.color.danger_red))
-                tvError.text = if (result is ApiClient.PinResult.Offline) {
-                    "Diagnostic server unreachable"
-                } else {
-                    context.getString(R.string.pin_invalid)
-                }
-                tvError.visibility = View.VISIBLE
-                pinBuilder.clear()
-                updateDisplay()
+                return@launch
             }
+            tvError.setTextColor(ContextCompat.getColor(context, R.color.danger_red))
+            when (result) {
+                is ApiClient.PinResult.Locked -> showLocked(result.seconds)
+                is ApiClient.PinResult.Invalid -> {
+                    val left = result.attemptsLeft
+                    tvError.text = context.getString(R.string.pin_invalid) +
+                        if (left != null) " · $left ${if (left == 1) "try" else "tries"} left" else ""
+                }
+                else -> tvError.text = "Diagnostic server unreachable"
+            }
+            tvError.visibility = View.VISIBLE
+            pinBuilder.clear()
+            updateDisplay()
         }
     }
 

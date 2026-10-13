@@ -30,7 +30,7 @@ from .database import (
 )
 from .metadata import generate_preview_frame
 from . import admin_auth
-from .admin_auth import is_admin, client_ip, login_limiter
+from .admin_auth import is_admin, client_ip, login_limiter, code_limiter
 
 from .scanner import (
     scan_directories_async, is_scanning,
@@ -274,14 +274,24 @@ async def help_portal(request: Request):
 async def verify_pin(req: PinVerifyRequest, request: Request):
     """Unlocks the TV vault: the PIN picks the user, whose folders the session is limited to."""
     entered = req.pin.strip()
-    user_id = find_user_by_pin(entered) if entered else None
+    ip = client_ip(request)
     device = (req.device or request_device(request))[:100]
+    # Locked out after too many wrong codes: not even a correct code gets in until it ends
+    locked = code_limiter.seconds_locked(ip)
+    if locked:
+        return {"valid": False, "locked_seconds": locked}
+    user_id = find_user_by_pin(entered) if entered else None
     if user_id is None:
-        log_activity("wrong_code", ip=client_ip(request), device=device)
-        return {"valid": False}
+        lockout = code_limiter.failed(ip)
+        if lockout:
+            log_activity("code_lockout", ip=ip, device=device, detail=f"{lockout // 60} min")
+            return {"valid": False, "locked_seconds": lockout}
+        log_activity("wrong_code", ip=ip, device=device)
+        return {"valid": False, "attempts_left": code_limiter.attempts_left(ip)}
+    code_limiter.clear(ip)
     # Each unlock starts an activity session; the TV tags its playback events with it
     session_id = secrets.token_hex(8)
-    log_activity("unlock", session_id=session_id, user_id=user_id, ip=client_ip(request), device=device)
+    log_activity("unlock", session_id=session_id, user_id=user_id, ip=ip, device=device)
     return {
         "valid": True,
         "user_id": user_id,
@@ -326,13 +336,23 @@ async def reset_user_pin(user_id: int, request: Request):
     log_activity("code_reset", user_id=user_id, ip=client_ip(request), detail="Reset to default from admin console")
     return {"success": True, "user_id": user_id}
 
+@app.get("/api/v1/lockouts", dependencies=[Depends(require_admin)])
+async def list_lockouts():
+    """Admin console: TVs (IP addresses) currently locked out of code entry, seconds remaining."""
+    return [{"ip": ip, "seconds_left": s} for ip, s in sorted(code_limiter.active_lockouts().items())]
+
+@app.post("/api/v1/lockouts/{ip}/clear", dependencies=[Depends(require_admin)])
+async def clear_lockout(ip: str, request: Request):
+    """Admin console: lets a locked-out TV enter codes again right away."""
+    code_limiter.clear(ip)
+    log_activity("code_unlocked", ip=ip, detail="Unlocked from admin console")
+    return {"success": True}
+
 @app.post("/api/v1/auth/verify-notes-pin")
 async def verify_notes_pin(req: NotesPinVerifyRequest):
-    """Validates numeric PIN for enabling Notes in TV app settings (configured NOTES_PIN or default 1234)."""
+    """Validates the PIN for showing Notes in the TV app: only the configured NOTES_PIN."""
     entered = req.pin.strip()
-    valid_pins = {NOTES_PIN.strip(), "1234"}
-    is_valid = entered in valid_pins
-    return {"valid": is_valid}
+    return {"valid": bool(entered) and hmac.compare_digest(entered, NOTES_PIN.strip())}
 
 @app.get("/api/v1/videos")
 async def list_videos(

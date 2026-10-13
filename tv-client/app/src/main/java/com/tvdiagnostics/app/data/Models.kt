@@ -100,7 +100,11 @@ data class PinVerifyResponse(
     @SerializedName("user_id") val userId: Int? = null,
     @SerializedName("user_name") val userName: String? = null,
     val token: String? = null,
-    @SerializedName("session_id") val sessionId: String? = null
+    @SerializedName("session_id") val sessionId: String? = null,
+    /** Wrong code: tries left before this TV is locked out */
+    @SerializedName("attempts_left") val attemptsLeft: Int? = null,
+    /** Too many wrong codes: code entry refused for this many seconds */
+    @SerializedName("locked_seconds") val lockedSeconds: Int? = null
 )
 
 data class ChangePinRequest(

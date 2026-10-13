@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (location.hash === "#activity") switchTab("activity");
     // Periodic status heartbeat
     setInterval(checkMountStatus, 10000);
+    setInterval(loadLockouts, 30000);
 
     // Global listener to close tag dropdowns on click outside
     document.addEventListener("click", (e) => {
@@ -768,6 +769,35 @@ async function loadUsers() {
     } catch (err) {
         console.error("Failed to load users:", err);
     }
+    loadLockouts();
+}
+
+async function loadLockouts() {
+    const panel = document.getElementById("lockoutPanel");
+    if (!panel) return;
+    try {
+        const res = await fetch("/api/v1/lockouts");
+        const lockouts = await res.json();
+        panel.classList.toggle("hidden", !lockouts.length);
+        panel.innerHTML = lockouts.map(l => `
+            <div class="lockout-row">
+                <span>⛔ TV <strong>${escapeHtml(l.ip)}</strong> is locked out of code entry for ${fmtSpan(l.seconds_left)} (too many wrong codes)</span>
+                <button class="btn btn-secondary" onclick="clearLockout('${escapeHtml(l.ip)}')">Unlock now</button>
+            </div>`).join("");
+    } catch (err) {
+        console.error("Failed to load lockouts:", err);
+    }
+}
+
+async function clearLockout(ip) {
+    try {
+        const res = await fetch(`/api/v1/lockouts/${encodeURIComponent(ip)}/clear`, { method: "POST" });
+        if (!res.ok) throw new Error(await res.text());
+        showAlert(`TV ${ip} can enter codes again`, "success");
+        loadLockouts();
+    } catch (err) {
+        showAlert("Failed to unlock: " + err.message, "error");
+    }
 }
 
 async function resetUserPin(userId) {
@@ -808,6 +838,8 @@ const EVENT_LABELS = {
     lock: ["🔒", "Locked"],
     code_changed: ["🔑", "Changed own code"],
     wrong_code: ["⛔", "Wrong TV code"],
+    code_lockout: ["⛔", "TV locked out (too many wrong codes)"],
+    code_unlocked: ["🔓", "TV lockout cleared"],
     code_reset: ["🔑", "Code reset to default"],
     admin_login: ["👤", "Console sign-in"],
     admin_login_failed: ["⛔", "Console sign-in failed"]

@@ -889,7 +889,7 @@ body {
 .ev-play .ev-label, .ev-play .ev-video { font-weight: 600; }
 .ev-pause, .ev-seek, .ev-speed { opacity: 0.8; }
 .ev-lock td, .ev-unlock td { background: rgba(59, 130, 246, 0.05); }
-.ev-wrong_code .ev-label, .ev-admin_login_failed .ev-label { color: var(--danger); }
+.ev-wrong_code .ev-label, .ev-admin_login_failed .ev-label, .ev-code_lockout .ev-label { color: var(--danger); }
 .activity-heading { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
 .activity-other { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; }
 .empty-state.small { padding: 16px; font-size: 13px; }
@@ -900,4 +900,11 @@ body {
     .session-device, .session-titles { grid-column: 1 / -1; }
     .ev-label { width: auto; }
     .ev-video { display: none; }
+}
+
+/* --- TV code lockouts --- */
+.lockout-panel { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.lockout-row {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 10px; padding: 10px 14px; font-size: 14px;
 }

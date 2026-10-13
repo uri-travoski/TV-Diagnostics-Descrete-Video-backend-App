@@ -15,6 +15,7 @@ os.environ["USER1_DIRS"] = _user1_dir
 os.environ["USER2_DIRS"] = _samples
 os.environ["ADMIN_USER"] = "admin"
 os.environ["ADMIN_PASSWORD"] = "test-pass"
+os.environ["NOTES_PIN"] = "4891"
 os.environ["PREGENERATE_PREVIEWS"] = "false"  # exercised directly in test_pregenerated_previews
 
 from fastapi.testclient import TestClient
@@ -212,16 +213,42 @@ def test_preview_frames(video_id):
     print("✓ 7-second storyboard preview frames served")
 
 def test_notes_pin_verification():
-    res_bad = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "0000"})
-    assert res_bad.json()["valid"] is False
-    
-    res_good_4 = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "1234"})
-    assert res_good_4.json()["valid"] is True
+    for wrong in ("0000", "1234", "123456", ""):
+        assert client.post("/api/v1/auth/verify-notes-pin", json={"pin": wrong}).json()["valid"] is False, wrong
+    assert client.post("/api/v1/auth/verify-notes-pin", json={"pin": "4891"}).json()["valid"] is True
+    print("✓ Only the configured Notes PIN (4891) works; 1234 rejected")
 
-    # 123456 must be rejected for notes pin
-    res_rejected_6 = client.post("/api/v1/auth/verify-notes-pin", json={"pin": "123456"})
-    assert res_rejected_6.json()["valid"] is False
-    print("✓ Notes PIN 1234 passed, 123456 strictly rejected")
+def test_code_lockout():
+    from app.admin_auth import code_limiter, CodeLimiter
+    code_limiter.clear("testclient")
+    first = anon.post("/api/v1/auth/verify", json={"pin": "111111"}).json()
+    assert first == {"valid": False, "attempts_left": 3}, first
+    assert anon.post("/api/v1/auth/verify", json={"pin": "111112"}).json()["attempts_left"] == 2
+    assert anon.post("/api/v1/auth/verify", json={"pin": "111113"}).json()["attempts_left"] == 1
+    fourth = anon.post("/api/v1/auth/verify", json={"pin": "111114"}).json()
+    assert fourth["valid"] is False and fourth["locked_seconds"] == 15 * 60, fourth
+    # Locked: even the right code is refused
+    assert anon.post("/api/v1/auth/verify", json={"pin": "002007"}).json()["valid"] is False
+    lockouts = client.get("/api/v1/lockouts").json()
+    assert lockouts[0]["ip"] == "testclient" and lockouts[0]["seconds_left"] > 800
+    assert anon.get("/api/v1/lockouts").status_code == 401
+    assert any(e["event"] == "code_lockout" for e in client.get("/api/v1/activity?days=1").json()["other_events"])
+    assert client.post("/api/v1/lockouts/testclient/clear").status_code == 200
+    assert anon.post("/api/v1/auth/verify", json={"pin": "002007"}).json()["valid"] is True
+
+    # Each further lockout doubles; a correct code resets everything
+    limiter = CodeLimiter(4, 15)
+    for _ in range(4):
+        limiter.failed("x")
+    assert 899 <= limiter.seconds_locked("x") <= 900
+    limiter._locked_until["x"] = 0
+    assert limiter.attempts_left("x") == 4
+    for _ in range(4):
+        last = limiter.failed("x")
+    assert last == 30 * 60
+    limiter.clear("x")
+    assert limiter.seconds_locked("x") == 0 and limiter.attempts_left("x") == 4
+    print("✓ 4 wrong TV codes lock that TV out for 15 min (then 30, 60...); admin can unlock")
 
 def test_videos_list():
     res = client.get("/api/v1/videos")
@@ -327,4 +354,5 @@ if __name__ == "__main__":
     test_incremental_scan()
     test_folder_watch()
     test_pregenerated_previews()
+    test_code_lockout()
     print("\n🎉 ALL BACKEND TESTS PASSED!")
