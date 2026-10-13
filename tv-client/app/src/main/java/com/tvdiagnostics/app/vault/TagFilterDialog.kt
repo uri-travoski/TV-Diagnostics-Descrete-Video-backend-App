@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
 import com.tvdiagnostics.app.security.VaultLock
 import com.tvdiagnostics.app.data.TagItem
+import com.tvdiagnostics.app.ui.UiMode
 
 class TagFilterDialog(
     context: Context,
@@ -41,6 +42,13 @@ class TagFilterDialog(
         VaultLock.trackInput(window)
         // Prevent virtual keyboard from popping up automatically on TV
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        UiMode.fitDialog(this, 720)
+        if (UiMode.isMobile) {
+            // Phone: two tag columns, and the long "Show All Tags" fits as "All"
+            findViewById<GridLayout>(R.id.gridTagsContainer).columnCount = 2
+            findViewById<Button>(R.id.btnTagResetAll).text = "All"
+            findViewById<Button>(R.id.btnTagClose).text = "✕"
+        }
 
         etTagFilterSearch = findViewById(R.id.etTagFilterSearch)
         gridTagsContainer = findViewById(R.id.gridTagsContainer)
@@ -84,8 +92,9 @@ class TagFilterDialog(
                 ).apply {
                     marginEnd = 6
                 }
-                minWidth = 44
-                height = 38
+                // TV sizes are in pixels (tuned on the boxes); phones need real finger sizes
+                minWidth = if (UiMode.isMobile) UiMode.dp(context, 44) else 44
+                height = if (UiMode.isMobile) UiMode.dp(context, 40) else 38
                 text = letter
                 textSize = 13f
                 setBackgroundResource(R.drawable.btn_tv_focus)
@@ -152,7 +161,7 @@ class TagFilterDialog(
             val btn = Button(context).apply {
                 val params = GridLayout.LayoutParams().apply {
                     width = 0
-                    height = 48
+                    height = if (UiMode.isMobile) UiMode.dp(context, 48) else 48
                     columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
                     setMargins(6, 6, 6, 6)
                 }

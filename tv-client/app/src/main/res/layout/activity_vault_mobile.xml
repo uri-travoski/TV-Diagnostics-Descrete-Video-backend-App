@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Phone / tablet library: header, full-width search, swipeable filter chips, video grid.
+     The root takes focus on open so the search field doesn't start out active. -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/bg_dark"
+    android:focusable="true"
+    android:focusableInTouchMode="true"
+    android:paddingTop="12dp">
+
+    <!-- Header: title + count, settings and lock -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="8dp"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/tvVaultTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/vault_title"
+            android:textColor="@color/text_white"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvVaultCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:textColor="@color/text_muted"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnVaultSettings"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Settings"
+            android:text="⚙"
+            android:textColor="@color/text_white"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/btnLockVault"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Lock"
+            android:text="🔒"
+            android:textSize="19sp" />
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/etVaultSearch"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="10dp"
+        android:background="@drawable/bg_search_mobile"
+        android:paddingStart="18dp"
+        android:paddingEnd="18dp"
+        android:hint="🔍  Search title, tags…"
+        android:textColorHint="#80F1F5F9"
+        android:textColor="@color/text_white"
+        android:textSize="14sp"
+        android:imeOptions="actionSearch"
+        android:inputType="text"
+        android:singleLine="true" />
+
+    <!-- Filters scroll sideways with a swipe -->
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:scrollbars="none"
+        android:layout_marginBottom="6dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="8dp">
+
+            <Button android:id="@+id/filterAll" style="@style/ChipStyle.Mobile" android:text="@string/category_all" />
+            <Button android:id="@+id/filterContinue" style="@style/ChipStyle.Mobile" android:text="@string/category_continue" />
+            <Button android:id="@+id/filterLevel2" style="@style/ChipStyle.Mobile" android:text="●●" />
+            <Button android:id="@+id/filterLevel1" style="@style/ChipStyle.Mobile" android:text="●" />
+            <Button android:id="@+id/filterUnrated" style="@style/ChipStyle.Mobile" android:text="○" />
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="22dp"
+                android:layout_marginStart="2dp"
+                android:layout_marginEnd="10dp"
+                android:background="#1FFFFFFF" />
+
+            <Button android:id="@+id/btnVaultSort" style="@style/ChipStyle.Mobile" android:text="⇅ Sort" />
+            <Button android:id="@+id/btnVaultFolders" style="@style/ChipStyle.Mobile" android:text="📁 All folders" />
+            <Button android:id="@+id/btnVaultTags" style="@style/ChipStyle.Mobile" android:text="# Tags" />
+            <Button android:id="@+id/btnClearTagFilter" style="@style/ChipStyle.Mobile" android:text="✕" android:visibility="gone" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvVideoGrid"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingStart="9dp"
+            android:paddingEnd="9dp"
+            android:paddingTop="4dp"
+            android:paddingBottom="24dp"
+            android:scrollbars="vertical" />
+
+        <TextView
+            android:id="@+id/tvEmptyState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:padding="24dp"
+            android:textColor="@color/text_muted"
+            android:textSize="15sp"
+            android:gravity="center"
+            android:visibility="gone" />
+    </FrameLayout>
+
+</LinearLayout>

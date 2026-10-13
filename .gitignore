@@ -49,3 +49,6 @@ Thumbs.db
 
 # App signing key (NEVER COMMIT; back it up: every in-app update must be signed with it)
 tv-client/keystore/
+
+# Home server compose: contains the admin password, never commit
+docker-compose for homeserver.yml

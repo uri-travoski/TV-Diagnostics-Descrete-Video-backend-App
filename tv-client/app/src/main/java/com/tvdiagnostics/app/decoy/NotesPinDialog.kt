@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
+import com.tvdiagnostics.app.ui.UiMode
 import com.tvdiagnostics.app.security.VaultLock
 import com.tvdiagnostics.app.TVDiagnosticsApp
 import com.tvdiagnostics.app.data.ApiClient
@@ -31,7 +32,8 @@ class NotesPinDialog(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
-        setContentView(R.layout.dialog_notes_pin)
+        setContentView(UiMode.keypadLayout(context, R.layout.dialog_notes_pin, R.layout.dialog_notes_pin_mobile))
+        UiMode.fitDialog(this, 600)
 
         window?.setBackgroundDrawableResource(android.R.color.transparent)
         VaultLock.trackInput(window)

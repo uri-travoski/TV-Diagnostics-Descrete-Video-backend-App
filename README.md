@@ -140,7 +140,7 @@ Output: `tv-client/app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 
-## Part 4: Using the TV App (Remote Control & Stealth)
+## Part 4: Using the App (TV Remote, Phone Touch & Stealth)
 
 ### 1. Decoy Diagnostics Mode
 When opened on the TV, the app appears as **"TV Diagnostics"** with a generic circuit/probe banner. It provides real diagnostic utilities:
@@ -189,7 +189,19 @@ To access the private media collection:
   - Playback terminates instantly, audio focus is dropped, task backstack is wiped, and the TV screen immediately reverts to a blank black display panel test.
   - Android `FLAG_SECURE` is active throughout (release builds), ensuring no video frame thumbnails ever appear in the Android TV "Recent Apps" switcher.
 
-### 6. App Updates
+### 6. Phones & Tablets (Mobile Layout)
+The same APK runs on phones and tablets. On first launch the app asks **"TV or TV box"** or **"Phone or tablet"** and sets up its screens for the answer; change it any time under **⚙ → Screen Layout** (the current screen switches straight away). Installs updated from an older version stay on the TV layout without asking.
+- **Screens follow the phone**: upright or sideways (respecting the phone's rotation lock). The code keypad is a big touch keypad when upright and side-by-side when sideways.
+- **Library**: two tile columns upright (more when sideways or on a tablet), full-width search, filter chips you swipe sideways. **Hold a tile** to flip through its preview; let go to stop.
+- **Video details** slide up from the bottom with the thumbnail and one big **Resume** (or **Play**) button.
+- **Player** (always sideways, full screen):
+  - **Tap** the picture: show / hide the controls (back, title, −10 s, play / pause, +10 s, seek bar, speed).
+  - **Double-tap** the left / right half: skip 10 s back / forward (keep tapping to skip further).
+  - **Drag the seek bar** to jump anywhere; tap **1×** for the speed list.
+  - **Back** returns to the library. Everything is in the activity log just like on TV.
+- Locking works the same: HOME, switching apps, the screen turning off, BACK from the library and 15 minutes idle all lock.
+
+### 7. App Updates
 - On start, the app checks GitHub once; when a newer version exists, an **⬆ Update to vX** button appears on the start screen (one press downloads and installs it).
 - **⚙ → Check for Update** compares the installed version with the latest [GitHub Release](https://github.com/uri-travoski/TV-Diagnostics-Descrete-Video-backend-App/releases/latest), then downloads and installs it (Android asks once to allow installs from TV Diagnostics).
 - Releases must be signed with the key in `tv-client/keystore/` (not in git) or they can't install over the existing app.

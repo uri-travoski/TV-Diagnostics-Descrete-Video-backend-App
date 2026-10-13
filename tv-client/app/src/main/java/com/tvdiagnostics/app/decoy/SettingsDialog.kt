@@ -17,6 +17,9 @@ import com.tvdiagnostics.app.TVDiagnosticsApp
 import com.tvdiagnostics.app.data.ApiClient
 import com.tvdiagnostics.app.data.ServerStatus
 import com.tvdiagnostics.app.security.VaultLock
+import com.tvdiagnostics.app.ui.UiMode
+import com.tvdiagnostics.app.ui.UiModeDialog
+import com.tvdiagnostics.app.ui.findActivity
 import com.tvdiagnostics.app.update.AppUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,6 +59,24 @@ class SettingsDialog(
         // Prevent virtual keyboard from popping up automatically on TV
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
         VaultLock.trackInput(window)
+        UiMode.fitDialog(this, 560)
+        if (UiMode.isMobile) {
+            // Phone: the settings body gets most of the screen height (any orientation)
+            val body = findViewById<View>(R.id.svSettingsBody)
+            body.layoutParams = body.layoutParams.apply {
+                height = (context.resources.displayMetrics.heightPixels * 0.55).toInt()
+            }
+            findViewById<EditText>(R.id.etConfirmPin).hint = "Repeat"
+            // Cancel / Save share the width instead of crowding the right edge
+            listOf(R.id.btnSettingsCancel, R.id.btnSettingsSave).forEach { id ->
+                val btn = findViewById<Button>(id)
+                btn.layoutParams = (btn.layoutParams as android.widget.LinearLayout.LayoutParams).apply {
+                    width = 0
+                    weight = 1f
+                    height = UiMode.dp(context, 48)
+                }
+            }
+        }
 
         etServerUrl = findViewById(R.id.etServerUrl)
         tvDeviceIpHint = findViewById(R.id.tvDeviceIpHint)
@@ -102,6 +123,7 @@ class SettingsDialog(
             btnCheckUpdate.text = "Update to v${release.version}"
         }
 
+        setupUiModeRow()
         btnChangePin.setOnClickListener { changePin() }
         btnCheckUpdate.setOnClickListener { checkOrInstallUpdate() }
 
@@ -137,7 +159,7 @@ class SettingsDialog(
         val btnCancel = findViewById<Button>(R.id.btnSettingsCancel)
         val btnSave = findViewById<Button>(R.id.btnSettingsSave)
 
-        listOf(btnTestConnection, btnChangePin, btnCheckUpdate, btnToggleNotes, btnCancel, btnSave).forEach { btn ->
+        listOf(btnTestConnection, btnChangePin, findViewById(R.id.btnChangeUiMode), btnCheckUpdate, btnToggleNotes, btnCancel, btnSave).forEach { btn ->
             btn.setOnFocusChangeListener { v, hasFocus ->
                 v.animate()
                     .scaleX(if (hasFocus) 1.06f else 1.0f)
@@ -163,6 +185,22 @@ class SettingsDialog(
 
         // Set default D-pad focus to test connection button, avoiding popping virtual keyboard
         btnTestConnection.requestFocus()
+    }
+
+    /** Screen Layout row: switching rebuilds the current screen right away in the other layout. */
+    private fun setupUiModeRow() {
+        findViewById<TextView>(R.id.tvUiModeStatus).text =
+            if (UiMode.isMobile) "Phone / tablet (touch screen)" else "TV (remote control)"
+        findViewById<Button>(R.id.btnChangeUiMode).setOnClickListener {
+            UiModeDialog(context, firstLaunch = false) { mode ->
+                if (mode == UiMode.current) return@UiModeDialog
+                UiMode.set(mode)
+                dismiss()
+                // Locked (opened from the code prompt): the rebuilt start screen asks for the code again
+                if (VaultLock.session == null) VaultLock.promptOnReturn = true
+                context.findActivity()?.recreate()
+            }.show()
+        }
     }
 
     private fun getLocalIpAddress(): String? {

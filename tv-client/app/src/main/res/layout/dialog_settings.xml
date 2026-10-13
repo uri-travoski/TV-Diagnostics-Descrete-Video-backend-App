@@ -17,6 +17,7 @@
 
     <!-- Scrollable Settings Body to guarantee fit on any TV screen without cut-off -->
     <ScrollView
+        android:id="@+id/svSettingsBody"
         android:layout_width="match_parent"
         android:layout_height="310dp"
         android:scrollbars="vertical"
@@ -170,6 +171,46 @@
                 android:tag="vaultOnly"
                 android:layout_width="match_parent"
                 android:layout_height="12dp" />
+
+            <!-- TV (remote) or phone / tablet (touch) screens -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Screen Layout:"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="#0F172A"
+                android:padding="12dp"
+                android:layout_marginBottom="18dp">
+
+                <TextView
+                    android:id="@+id/tvUiModeStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="TV (remote control)"
+                    android:textColor="@color/text_white"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnChangeUiMode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:background="@drawable/btn_tv_focus"
+                    android:text="Change"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="12sp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:focusable="true" />
+            </LinearLayout>
 
             <!-- App Updates from GitHub Releases -->
             <TextView

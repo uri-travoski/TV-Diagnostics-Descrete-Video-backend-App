@@ -38,4 +38,38 @@
         <item name="android:focusable">true</item>
         <item name="android:nextFocusDown">@+id/rvVideoGrid</item>
     </style>
+
+    <!-- Mobile (touch) variants: finger-sized targets -->
+    <style name="PinBoxStyle.Mobile">
+        <item name="android:layout_width">40dp</item>
+        <item name="android:layout_height">48dp</item>
+        <item name="android:layout_margin">4dp</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="PinKeyStyle.Mobile">
+        <item name="android:layout_width">80dp</item>
+        <item name="android:layout_height">60dp</item>
+        <item name="android:layout_margin">5dp</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="ChipStyle.Mobile">
+        <item name="android:layout_height">40dp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:textSize">13sp</item>
+    </style>
+
+    <!-- Full-width touch button (phone start screen, detail sheet) -->
+    <style name="MobileButton">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">52dp</item>
+        <item name="android:layout_marginBottom">10dp</item>
+        <item name="android:background">@drawable/btn_tv_focus</item>
+        <item name="android:textColor">@color/text_white</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
 </resources>

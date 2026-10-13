@@ -15,6 +15,9 @@
     <!-- In-app updates from GitHub Releases -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
+    <!-- Orientation is set per screen in code (UiMode): TV layout always landscape,
+         mobile layout follows the phone (the player turns sideways). Turning a phone
+         doesn't rebuild a screen (configChanges), so filters and an open code prompt stay. -->
     <application
         android:name=".TVDiagnosticsApp"
         android:allowBackup="true"
@@ -29,7 +32,7 @@
         <activity
             android:name=".decoy.DecoyActivity"
             android:exported="true"
-            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:launchMode="singleTop">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -44,21 +47,20 @@
         <activity
             android:name=".decoy.ScreenTestActivity"
             android:exported="false"
-            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:theme="@style/Theme.TVDiagnostics.Fullscreen" />
 
         <!-- Discreet Vault Library Activity -->
         <activity
             android:name=".vault.VaultActivity"
             android:exported="false"
-            android:screenOrientation="landscape"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:theme="@style/Theme.TVDiagnostics" />
 
         <!-- Media3 ExoPlayer TV Activity -->
         <activity
             android:name=".player.PlayerActivity"
             android:exported="false"
-            android:screenOrientation="landscape"
             android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|smallestScreenSize"
             android:theme="@style/Theme.TVDiagnostics.Player" />
 

@@ -3,6 +3,7 @@ package com.tvdiagnostics.app.vault
 import android.app.Activity
 import android.os.Handler
 import android.os.Looper
+import android.view.MotionEvent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +19,7 @@ import com.tvdiagnostics.app.R
 import com.tvdiagnostics.app.TVDiagnosticsApp
 import com.tvdiagnostics.app.data.ApiClient
 import com.tvdiagnostics.app.data.VideoItem
+import com.tvdiagnostics.app.ui.UiMode
 
 class VideoAdapter(
     private var items: List<VideoItem>,
@@ -160,9 +162,26 @@ class VideoAdapter(
                     .start()
                 if (hasFocus) startPreview() else stopPreview()
             }
+
+            // Touch screens have no focus: hold a tile to flip through its preview, let go to stop
+            if (UiMode.isMobile) {
+                cardFrame.setOnLongClickListener {
+                    startPreview(startDelayMs = 0L)
+                    true
+                }
+                cardFrame.setOnTouchListener { _, event ->
+                    if (event.actionMasked == MotionEvent.ACTION_UP || event.actionMasked == MotionEvent.ACTION_CANCEL) {
+                        stopPreview()
+                    }
+                    false
+                }
+            } else {
+                cardFrame.setOnLongClickListener(null)
+                cardFrame.setOnTouchListener(null)
+            }
         }
 
-        private fun startPreview() {
+        private fun startPreview(startDelayMs: Long = PREVIEW_START_DELAY_MS) {
             if (!screenAlive()) return
             val video = item ?: return
             if (video.getPreviewFrameCount() == 0) return
@@ -170,7 +189,7 @@ class VideoAdapter(
             previewIndex = 0
             preloadFrame(video, 0)
             // Short pause first so scrolling across the grid doesn't fire off frame requests
-            previewHandler.postDelayed(previewStep, PREVIEW_START_DELAY_MS)
+            previewHandler.postDelayed(previewStep, startDelayMs)
         }
 
         fun stopPreview() {

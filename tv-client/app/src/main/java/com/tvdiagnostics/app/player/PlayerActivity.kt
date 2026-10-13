@@ -6,13 +6,21 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.view.GestureDetector
 import android.view.Gravity
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.TextView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
@@ -25,6 +33,7 @@ import com.tvdiagnostics.app.data.VideoItem
 import com.tvdiagnostics.app.security.PanicManager
 import com.tvdiagnostics.app.security.Session
 import com.tvdiagnostics.app.security.VaultLock
+import com.tvdiagnostics.app.ui.UiMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -41,6 +50,11 @@ import kotlinx.coroutines.withContext
  * - UP: transparent speed menu in the bottom-right corner (UP/DOWN to pick, OK to apply).
  * - DOWN: peek at the overlay without pausing.
  * - BACK: hide the speed menu / overlay, else return to the library. Double BACK or MENU = panic.
+ *
+ * Phones / tablets (mobile layout) get touch controls instead, in landscape and full screen:
+ * - Tap the picture: show / hide the controls (back + title, -10 s / play-pause / +10 s, seek bar, speed).
+ * - Double-tap the left / right half: skip 10 s back / forward (keep tapping to skip further).
+ * - Drag the seek bar to jump; tap the speed (1×) for the speed list.
  * Play, pause, skips, speed changes and closing are sent to the admin activity log.
  */
 class PlayerActivity : AppCompatActivity() {
@@ -52,6 +66,24 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var tvSpeedBadge: TextView
     private lateinit var progressFill: View
     private lateinit var speedMenu: LinearLayout
+
+    // Touch controls (mobile layout only)
+    private val isMobile = UiMode.isMobile
+    private lateinit var mobileControls: View
+    private lateinit var btnPlayPause: ImageButton
+    private lateinit var seekBar: SeekBar
+    private lateinit var tvMobilePosition: TextView
+    private lateinit var tvMobileDuration: TextView
+    private lateinit var btnMobileSpeed: TextView
+    private lateinit var tvSeekBack: TextView
+    private lateinit var tvSeekForward: TextView
+    private var isDraggingSeekBar = false
+    /** Touch controls stay a little longer than the TV overlay */
+    private val overlayTimeoutMs = if (isMobile) MOBILE_OVERLAY_TIMEOUT_MS else OVERLAY_TIMEOUT_MS
+    private val hideSeekFeedback = Runnable {
+        tvSeekBack.visibility = View.GONE
+        tvSeekForward.visibility = View.GONE
+    }
 
     private var exoPlayer: ExoPlayer? = null
     private var videoItem: VideoItem? = null
@@ -78,14 +110,18 @@ class PlayerActivity : AppCompatActivity() {
     private var progressSyncJob: Job? = null
     private val uiHandler = Handler(Looper.getMainLooper())
     private val hideOverlayRunnable = Runnable {
-        if (exoPlayer?.playWhenReady == true && speedMenu.visibility != View.VISIBLE) {
+        // Stays up while paused, at the end of the video (to play it again) and while choosing a speed / dragging
+        val player = exoPlayer
+        if (player != null && player.playWhenReady && player.playbackState != Player.STATE_ENDED &&
+            speedMenu.visibility != View.VISIBLE && !isDraggingSeekBar
+        ) {
             hideOverlay()
         }
     }
     private val overlayTicker = object : Runnable {
         override fun run() {
             updateOverlay()
-            if (bottomOverlay.visibility == View.VISIBLE) uiHandler.postDelayed(this, 500)
+            if (overlayVisible()) uiHandler.postDelayed(this, 500)
         }
     }
 
@@ -98,6 +134,7 @@ class PlayerActivity : AppCompatActivity() {
         // Security: Prevent OS recents snapshot. Keep the screen fully bright while playing or paused.
         VaultLock.secureWindow(this)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        UiMode.applyOrientation(this, player = true)
 
         setContentView(R.layout.activity_player)
 
@@ -119,7 +156,10 @@ class PlayerActivity : AppCompatActivity() {
         speedMenu = findViewById(R.id.speedMenu)
 
         buildSpeedMenu()
+        if (isMobile) setupMobileControls()
         initPlayer()
+        // Phones: show the controls for a moment so it's clear where they are
+        if (isMobile) showOverlay()
     }
 
     private fun initPlayer() {
@@ -150,7 +190,7 @@ class PlayerActivity : AppCompatActivity() {
             }
 
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
-                if (bottomOverlay.visibility == View.VISIBLE) updateOverlay()
+                if (overlayVisible()) updateOverlay()
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -171,20 +211,28 @@ class PlayerActivity : AppCompatActivity() {
 
     // --- Overlay ---
 
+    private fun overlayVisible(): Boolean =
+        (if (isMobile) mobileControls else bottomOverlay).visibility == View.VISIBLE
+
+    /** TV: the small bottom overlay. Mobile: the full touch controls. */
     private fun showOverlay() {
-        bottomOverlay.visibility = View.VISIBLE
+        (if (isMobile) mobileControls else bottomOverlay).visibility = View.VISIBLE
         updateOverlay()
         uiHandler.removeCallbacks(overlayTicker)
         uiHandler.postDelayed(overlayTicker, 500)
         uiHandler.removeCallbacks(hideOverlayRunnable)
         // While paused the overlay stays so the pause state is visible; while playing it goes away
-        uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_TIMEOUT_MS)
+        uiHandler.postDelayed(hideOverlayRunnable, overlayTimeoutMs)
     }
 
     private fun hideOverlay() {
         uiHandler.removeCallbacks(hideOverlayRunnable)
         uiHandler.removeCallbacks(overlayTicker)
         bottomOverlay.visibility = View.GONE
+        if (isMobile) {
+            mobileControls.visibility = View.GONE
+            speedMenu.visibility = View.GONE
+        }
     }
 
     private fun updateOverlay() {
@@ -198,6 +246,121 @@ class PlayerActivity : AppCompatActivity() {
         progressFill.scaleX = if (duration > 0) (position.toFloat() / duration).coerceIn(0f, 1f) else 0f
 
         tvSpeedBadge.text = "▲ ${formatSpeed(SPEEDS[currentSpeedIndex])}"
+
+        if (isMobile) {
+            btnPlayPause.setImageResource(if (playing) R.drawable.ic_pause else R.drawable.ic_play)
+            tvMobileDuration.text = formatTime(duration)
+            btnMobileSpeed.text = formatSpeed(SPEEDS[currentSpeedIndex])
+            if (!isDraggingSeekBar) {
+                tvMobilePosition.text = formatTime(position)
+                seekBar.progress = if (duration > 0) (position * SEEK_BAR_MAX / duration).toInt() else 0
+                seekBar.secondaryProgress = if (duration > 0) (player.bufferedPosition * SEEK_BAR_MAX / duration).toInt() else 0
+            }
+        }
+    }
+
+    // --- Touch controls (mobile) ---
+
+    private fun setupMobileControls() {
+        mobileControls = findViewById(R.id.mobileControls)
+        btnPlayPause = findViewById(R.id.btnPlayPause)
+        seekBar = findViewById(R.id.seekBar)
+        tvMobilePosition = findViewById(R.id.tvMobilePosition)
+        tvMobileDuration = findViewById(R.id.tvMobileDuration)
+        btnMobileSpeed = findViewById(R.id.btnMobileSpeed)
+        tvSeekBack = findViewById(R.id.tvSeekBack)
+        tvSeekForward = findViewById(R.id.tvSeekForward)
+
+        // Full screen: status and navigation bars come back with a swipe from the edge
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+
+        findViewById<TextView>(R.id.tvPlayerTitle).text = videoItem?.title ?: ""
+        findViewById<View>(R.id.btnPlayerBack).setOnClickListener { finish() }
+        btnPlayPause.setOnClickListener { exoPlayer?.let { togglePlayPause(it) } }
+        findViewById<View>(R.id.btnRewind).setOnClickListener { touchSeek(-SEEK_STEP_MS) }
+        findViewById<View>(R.id.btnForward).setOnClickListener { touchSeek(SEEK_STEP_MS) }
+        btnMobileSpeed.setOnClickListener {
+            if (speedMenu.visibility == View.VISIBLE) closeSpeedMenu() else openSpeedMenu()
+        }
+
+        // Speed list above the bottom bar, on top of everything so it gets the taps
+        speedMenu.layoutParams = (speedMenu.layoutParams as FrameLayout.LayoutParams).apply {
+            marginEnd = UiMode.dp(this@PlayerActivity, 12)
+            bottomMargin = UiMode.dp(this@PlayerActivity, 64)
+        }
+        speedMenu.bringToFront()
+
+        seekBar.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
+                if (fromUser) tvMobilePosition.text = formatTime(seekBarTarget(progress))
+            }
+
+            override fun onStartTrackingTouch(bar: SeekBar) {
+                isDraggingSeekBar = true
+                uiHandler.removeCallbacks(hideOverlayRunnable)
+            }
+
+            override fun onStopTrackingTouch(bar: SeekBar) {
+                isDraggingSeekBar = false
+                val player = exoPlayer ?: return
+                val from = player.currentPosition
+                val target = seekBarTarget(bar.progress)
+                player.seekTo(target)
+                // Logged right away as one jump (from → to), like a run of remote skips
+                uiHandler.removeCallbacks(logSeekRunnable)
+                if (seekChainFrom < 0) seekChainFrom = from
+                lastSeekTarget = target
+                logSeekChain()
+                showOverlay()
+            }
+        })
+
+        val gestureLayer = findViewById<View>(R.id.gestureLayer)
+        val detector = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
+
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                if (overlayVisible()) hideOverlay() else showOverlay()
+                return true
+            }
+
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                val forward = e.x > gestureLayer.width / 2f
+                touchSeek(if (forward) SEEK_STEP_MS else -SEEK_STEP_MS, showFeedback = true)
+                return true
+            }
+        })
+        gestureLayer.visibility = View.VISIBLE
+        gestureLayer.setOnTouchListener { _, event -> detector.onTouchEvent(event) }
+    }
+
+    private fun seekBarTarget(progress: Int): Long {
+        val duration = exoPlayer?.duration?.takeIf { it > 0 } ?: return 0L
+        return (duration * progress / SEEK_BAR_MAX).coerceIn(0L, (duration - 1000L).coerceAtLeast(0L))
+    }
+
+    /** ±10 s from a button or double-tap; repeated taps add up (and are logged as one skip). */
+    private fun touchSeek(deltaMs: Long, showFeedback: Boolean = false) {
+        val player = exoPlayer ?: return
+        seekBy(player, deltaMs)
+        if (overlayVisible()) {
+            // Keep the controls up while skipping
+            uiHandler.removeCallbacks(hideOverlayRunnable)
+            uiHandler.postDelayed(hideOverlayRunnable, overlayTimeoutMs)
+        }
+        if (showFeedback) {
+            val total = kotlin.math.abs(lastSeekTarget - seekChainFrom) / 1000
+            val forward = lastSeekTarget >= seekChainFrom
+            tvSeekForward.visibility = if (forward) View.VISIBLE else View.GONE
+            tvSeekBack.visibility = if (forward) View.GONE else View.VISIBLE
+            if (forward) tvSeekForward.text = "$total s  »" else tvSeekBack.text = "«  $total s"
+            uiHandler.removeCallbacks(hideSeekFeedback)
+            uiHandler.postDelayed(hideSeekFeedback, SEEK_CHAIN_WINDOW_MS)
+        }
     }
 
     // --- Speed menu ---
@@ -209,11 +372,15 @@ class PlayerActivity : AppCompatActivity() {
         for (i in SPEEDS.indices.reversed()) {
             val item = TextView(this).apply {
                 text = formatSpeed(SPEEDS[i])
-                textSize = 13f
                 gravity = Gravity.CENTER
-                minWidth = (64 * density).toInt()
-                setPadding((12 * density).toInt(), (5 * density).toInt(), (12 * density).toInt(), (5 * density).toInt())
+                // Phones: rows big enough to tap
+                val padV = if (isMobile) 10 else 5
+                textSize = if (isMobile) 15f else 13f
+                minWidth = ((if (isMobile) 76 else 64) * density).toInt()
+                setPadding((12 * density).toInt(), (padV * density).toInt(), (12 * density).toInt(), (padV * density).toInt())
                 tag = i
+                // Phones: tap a speed to use it
+                setOnClickListener { applySpeed(i) }
             }
             speedMenu.addView(item)
         }
@@ -243,17 +410,21 @@ class PlayerActivity : AppCompatActivity() {
         showOverlay()
     }
 
+    private fun applySpeed(index: Int) {
+        if (index != currentSpeedIndex) {
+            currentSpeedIndex = index
+            exoPlayer?.playbackParameters = PlaybackParameters(SPEEDS[currentSpeedIndex])
+            logEvent("speed", exoPlayer?.currentPosition ?: 0L, formatSpeed(SPEEDS[currentSpeedIndex]))
+        }
+        closeSpeedMenu()
+    }
+
     private fun handleSpeedMenuKey(keyCode: Int): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_DPAD_UP -> speedMenuIndex = (speedMenuIndex + 1).coerceAtMost(SPEEDS.size - 1)
             KeyEvent.KEYCODE_DPAD_DOWN -> speedMenuIndex = (speedMenuIndex - 1).coerceAtLeast(0)
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                if (speedMenuIndex != currentSpeedIndex) {
-                    currentSpeedIndex = speedMenuIndex
-                    exoPlayer?.playbackParameters = PlaybackParameters(SPEEDS[currentSpeedIndex])
-                    logEvent("speed", exoPlayer?.currentPosition ?: 0L, formatSpeed(SPEEDS[currentSpeedIndex]))
-                }
-                closeSpeedMenu()
+                applySpeed(speedMenuIndex)
                 return true
             }
             KeyEvent.KEYCODE_BACK -> {
@@ -266,7 +437,7 @@ class PlayerActivity : AppCompatActivity() {
         renderSpeedMenu()
         // Keep the menu up while the user is choosing
         uiHandler.removeCallbacks(hideOverlayRunnable)
-        uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_TIMEOUT_MS)
+        uiHandler.postDelayed(hideOverlayRunnable, overlayTimeoutMs)
         return true
     }
 
@@ -332,7 +503,8 @@ class PlayerActivity : AppCompatActivity() {
                 return true
             }
             KeyEvent.KEYCODE_BACK -> {
-                if (bottomOverlay.visibility == View.VISIBLE && player.playWhenReady) {
+                // Phones: back always leaves the video (the controls hide by themselves)
+                if (!isMobile && bottomOverlay.visibility == View.VISIBLE && player.playWhenReady) {
                     hideOverlay()
                     return true
                 }
@@ -371,7 +543,7 @@ class PlayerActivity : AppCompatActivity() {
         player.seekTo(target)
         lastSeekTarget = target
         lastSeekAt = now
-        if (bottomOverlay.visibility == View.VISIBLE) updateOverlay()
+        if (overlayVisible()) updateOverlay()
         // A run of LEFT/RIGHT presses is logged once, as where it started and where it ended
         uiHandler.removeCallbacks(logSeekRunnable)
         uiHandler.postDelayed(logSeekRunnable, SEEK_CHAIN_WINDOW_MS)
@@ -490,5 +662,7 @@ class PlayerActivity : AppCompatActivity() {
         private const val SEEK_STEP_MS = 10_000L
         private const val SEEK_CHAIN_WINDOW_MS = 1500L
         private const val OVERLAY_TIMEOUT_MS = 2500L
+        private const val MOBILE_OVERLAY_TIMEOUT_MS = 3500L
+        private const val SEEK_BAR_MAX = 1000L
     }
 }

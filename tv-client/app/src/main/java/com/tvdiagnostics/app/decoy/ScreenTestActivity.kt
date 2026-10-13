@@ -9,6 +9,7 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.tvdiagnostics.app.R
+import com.tvdiagnostics.app.ui.UiMode
 
 class ScreenTestActivity : AppCompatActivity() {
 
@@ -27,6 +28,7 @@ class ScreenTestActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        UiMode.applyOrientation(this)
         setContentView(R.layout.activity_screen_test)
 
         container = findViewById(R.id.screenContainer)

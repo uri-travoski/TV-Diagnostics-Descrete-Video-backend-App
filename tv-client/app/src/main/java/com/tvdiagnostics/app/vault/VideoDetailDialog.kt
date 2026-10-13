@@ -4,8 +4,11 @@ import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.view.Gravity
 import android.view.View
+import android.view.ViewGroup
 import android.view.Window
+import android.widget.ImageView
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
@@ -16,6 +19,10 @@ import com.tvdiagnostics.app.TVDiagnosticsApp
 import com.tvdiagnostics.app.data.ApiClient
 import com.tvdiagnostics.app.data.VideoItem
 import com.tvdiagnostics.app.player.PlayerActivity
+import com.tvdiagnostics.app.ui.UiMode
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.model.GlideUrl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -29,10 +36,11 @@ class VideoDetailDialog(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
-        setContentView(R.layout.dialog_video_detail)
+        setContentView(UiMode.layout(R.layout.dialog_video_detail, R.layout.dialog_video_detail_mobile))
 
         window?.setBackgroundDrawableResource(android.R.color.transparent)
         VaultLock.trackInput(window)
+        if (UiMode.isMobile) setupBottomSheet()
 
         val tvTitle = findViewById<TextView>(R.id.tvDetailTitle)
         val tvRating = findViewById<TextView>(R.id.tvDetailRating)
@@ -109,6 +117,8 @@ class VideoDetailDialog(
             }
         }
 
+        if (UiMode.isMobile) styleMobileButtons(btnPlayStart, btnResume, btnResetProgress)
+
         btnResume.setOnClickListener {
             launchPlayer(startPositionMs = (video.watchedSeconds * 1000).toLong())
         }
@@ -126,11 +136,51 @@ class VideoDetailDialog(
                     tvProgress.visibility = View.GONE
                     btnResume.visibility = View.GONE
                     btnPlayStart.requestFocus()
+                    if (UiMode.isMobile) styleMobileButtons(btnPlayStart, btnResume, btnResetProgress)
                     onProgressReset()
                     Toast.makeText(context, "Playback position reset", Toast.LENGTH_SHORT).show()
                 }
             }
         }
+    }
+
+    /** Phone: slides up from the bottom, full width, with the video's thumbnail on top. */
+    private fun setupBottomSheet() {
+        val metrics = context.resources.displayMetrics
+        // Full width on a phone held upright; on a sideways phone or tablet, a centred sheet
+        val sheetWidth = minOf(metrics.widthPixels, UiMode.dp(context, 560))
+        window?.let { w ->
+            w.setGravity(Gravity.BOTTOM)
+            w.setLayout(sheetWidth, ViewGroup.LayoutParams.WRAP_CONTENT)
+            w.attributes = w.attributes.apply { windowAnimations = android.R.style.Animation_InputMethod }
+        }
+        // Long notes scroll inside the sheet; the play buttons always stay on screen
+        val body = findViewById<View>(R.id.svDetailBody)
+        body.post {
+            val max = (metrics.heightPixels * 0.5).toInt()
+            if (body.height > max) body.layoutParams = body.layoutParams.apply { height = max }
+        }
+        val thumbUrl = ApiClient.getThumbnailUrl(video.id)
+        Glide.with(context)
+            .load(object : GlideUrl(thumbUrl) {
+                // Same cache entry as the library tile (the session token is left out of the key)
+                override fun getCacheKey(): String = thumbUrl.substringBefore("?t=")
+            })
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .centerCrop()
+            .into(findViewById<ImageView>(R.id.ivDetailThumb).apply {
+                // 16:9 like the video, but never more than about a quarter of the screen height
+                val fullWidth = (sheetWidth - UiMode.dp(context, 36)) * 9 / 16
+                layoutParams = layoutParams.apply { height = minOf(fullWidth, (metrics.heightPixels * 0.28).toInt()) }
+            })
+    }
+
+    /** Phone: the main action (Resume, else Play) is the blue button; reset only when there is progress. */
+    private fun styleMobileButtons(btnPlayStart: Button, btnResume: Button, btnReset: Button) {
+        val hasProgress = btnResume.visibility == View.VISIBLE
+        btnPlayStart.setBackgroundResource(if (hasProgress) R.drawable.btn_tv_focus else R.drawable.btn_primary)
+        btnPlayStart.text = if (hasProgress) "▶  Play from Start" else "▶  Play"
+        btnReset.visibility = if (hasProgress) View.VISIBLE else View.GONE
     }
 
     private fun launchPlayer(startPositionMs: Long) {

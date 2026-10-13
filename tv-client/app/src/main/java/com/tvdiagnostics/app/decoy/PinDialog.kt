@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
+import com.tvdiagnostics.app.ui.UiMode
 import com.tvdiagnostics.app.data.ApiClient
 import com.tvdiagnostics.app.security.Session
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +31,8 @@ class PinDialog(
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestWindowFeature(Window.FEATURE_NO_TITLE)
-        setContentView(R.layout.dialog_pin)
+        setContentView(UiMode.keypadLayout(context, R.layout.dialog_pin, R.layout.dialog_pin_mobile))
+        UiMode.fitDialog(this, 600)
 
         window?.setBackgroundDrawableResource(android.R.color.transparent)
 

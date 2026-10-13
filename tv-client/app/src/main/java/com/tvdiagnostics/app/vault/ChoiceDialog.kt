@@ -13,6 +13,7 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
 import com.tvdiagnostics.app.security.VaultLock
+import com.tvdiagnostics.app.ui.UiMode
 
 /** One row of a [ChoiceDialog]; [depth] indents it (subfolders). */
 data class Choice<T>(val value: T, val label: String, val depth: Int = 0, val trailing: String = "")
@@ -32,16 +33,19 @@ class ChoiceDialog<T>(
         setContentView(R.layout.dialog_choices)
         window?.setBackgroundDrawableResource(android.R.color.transparent)
         VaultLock.trackInput(window)
+        UiMode.fitDialog(this, 460)
 
         findViewById<TextView>(R.id.tvChoiceTitle).text = title
         val container = findViewById<LinearLayout>(R.id.choiceContainer)
         val density = context.resources.displayMetrics.density
         var current: Button? = null
+        // Finger-sized rows on a phone
+        val rowHeight = if (UiMode.isMobile) 50 else 40
 
         for (choice in choices) {
             val isSelected = choice.value == selected
             val btn = Button(context).apply {
-                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (40 * density).toInt()).apply {
+                layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (rowHeight * density).toInt()).apply {
                     bottomMargin = (4 * density).toInt()
                 }
                 isAllCaps = false

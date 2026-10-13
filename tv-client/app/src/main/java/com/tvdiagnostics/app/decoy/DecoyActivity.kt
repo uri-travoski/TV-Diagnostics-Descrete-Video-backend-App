@@ -16,6 +16,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.tvdiagnostics.app.R
 import com.tvdiagnostics.app.security.VaultLock
+import com.tvdiagnostics.app.ui.UiMode
+import com.tvdiagnostics.app.ui.UiModeDialog
 import com.tvdiagnostics.app.update.AppUpdater
 import com.tvdiagnostics.app.vault.VaultActivity
 import kotlinx.coroutines.CoroutineScope
@@ -45,9 +47,21 @@ class DecoyActivity : AppCompatActivity() {
     )
     private val keyHistory = mutableListOf<Int>()
 
+    /** TV or mobile layout this screen was built with; rebuilt when Settings switches it. */
+    private var builtMode: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_decoy)
+        builtMode = UiMode.current
+        val firstLaunch = builtMode == null
+        if (firstLaunch) {
+            // Not chosen yet: show the start screen that fits the device while asking
+            requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            setContentView(if (UiMode.looksLikeTv(this)) R.layout.activity_decoy else R.layout.activity_decoy_mobile)
+        } else {
+            UiMode.applyOrientation(this)
+            setContentView(UiMode.layout(R.layout.activity_decoy, R.layout.activity_decoy_mobile))
+        }
 
         initViews()
         detectDisplaySpecs()
@@ -55,7 +69,12 @@ class DecoyActivity : AppCompatActivity() {
         setupListeners()
         checkForUpdate()
 
-        if (intent.getBooleanExtra(EXTRA_AUTO_PROMPT_PIN, false)) {
+        if (firstLaunch) {
+            UiModeDialog(this, firstLaunch = true) { mode ->
+                UiMode.set(mode)
+                recreate()
+            }.show()
+        } else if (intent.getBooleanExtra(EXTRA_AUTO_PROMPT_PIN, false)) {
             VaultLock.promptOnReturn = false
             showPinDialog()
         } else {
@@ -207,11 +226,24 @@ class DecoyActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        // Layout switched in Settings (from the library): rebuild this screen to match
+        if (builtMode != null && builtMode != UiMode.current) {
+            recreate()
+            return
+        }
         // Returning after the vault locked in the background (HOME, app switch): ask for the code
         if (VaultLock.promptOnReturn) {
             VaultLock.promptOnReturn = false
             showPinDialog()
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Phone turned (the screen isn't rebuilt): new resolution, and an open code prompt
+        // is reopened with the keypad that fits the new orientation
+        detectDisplaySpecs()
+        if (UiMode.isMobile && pinDialog?.isShowing == true) showPinDialog()
     }
 
     override fun onDestroy() {

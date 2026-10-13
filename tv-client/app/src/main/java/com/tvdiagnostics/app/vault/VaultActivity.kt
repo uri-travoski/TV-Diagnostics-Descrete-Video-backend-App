@@ -26,6 +26,7 @@ import com.tvdiagnostics.app.decoy.SettingsDialog
 import com.tvdiagnostics.app.security.LockReason
 import com.tvdiagnostics.app.security.PanicManager
 import com.tvdiagnostics.app.security.VaultLock
+import com.tvdiagnostics.app.ui.UiMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -56,6 +57,9 @@ class VaultActivity : AppCompatActivity() {
     private lateinit var tvEmptyState: TextView
     private lateinit var ratingButtons: List<Button>
 
+    /** TV or mobile layout this screen was built with; rebuilt when Settings switches it. */
+    private var builtMode: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (VaultLock.redirectIfLocked(this)) return
@@ -64,10 +68,19 @@ class VaultActivity : AppCompatActivity() {
         // Prevent recent apps task switcher from capturing preview thumbnails
         VaultLock.secureWindow(this)
 
-        setContentView(R.layout.activity_vault)
+        builtMode = UiMode.current
+        UiMode.applyOrientation(this)
+        setContentView(UiMode.layout(R.layout.activity_vault, R.layout.activity_vault_mobile))
 
-        // Prevent virtual keyboard from popping up automatically on TV
-        window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        if (UiMode.isMobile) {
+            // Phone: keyboard only when the search field is tapped, and the grid shrinks above it
+            window.setSoftInputMode(
+                WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN or WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+            )
+        } else {
+            // Prevent virtual keyboard from popping up automatically on TV
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        }
 
         // Leaving the library for the start screen locks the vault (the code is needed to come back)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -86,6 +99,10 @@ class VaultActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         if (VaultLock.redirectIfLocked(this)) return
+        if (builtMode != UiMode.current) {
+            recreate()
+            return
+        }
         // Refresh video list & progress when returning from player or settings
         loadVideos()
     }
@@ -97,8 +114,8 @@ class VaultActivity : AppCompatActivity() {
 
     private fun initViews() {
         rvVideos = findViewById(R.id.rvVideoGrid)
-        // 5 columns of 16:9 tiles on 1080p/4K TV screens
-        rvVideos.layoutManager = GridLayoutManager(this, 5)
+        // 5 columns of 16:9 tiles on 1080p/4K TV screens; on a phone as many as fit (2 upright)
+        rvVideos.layoutManager = GridLayoutManager(this, gridColumns())
         rvVideos.itemAnimator = null
 
         tvVaultCount = findViewById(R.id.tvVaultCount)
@@ -163,6 +180,24 @@ class VaultActivity : AppCompatActivity() {
         findViewById<Button>(R.id.filterAll)?.requestFocus()
     }
 
+    private fun gridColumns(): Int {
+        if (!UiMode.isMobile) return 5
+        val widthDp = resources.configuration.screenWidthDp
+        return (widthDp / MOBILE_TILE_DP).coerceIn(2, 6)
+    }
+
+    override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // Phone turned: the screen isn't rebuilt (filters and scroll position stay), only the columns change
+        (rvVideos.layoutManager as? GridLayoutManager)?.spanCount = gridColumns()
+    }
+
+    private fun hideKeyboard() {
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(etSearch.windowToken, 0)
+        etSearch.clearFocus()
+    }
+
     private fun setupSearch() {
         etSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
@@ -177,7 +212,7 @@ class VaultActivity : AppCompatActivity() {
             if (actionId == EditorInfo.IME_ACTION_SEARCH || actionId == EditorInfo.IME_ACTION_DONE) {
                 searchQuery = etSearch.text.toString().trim().lowercase()
                 applyFilters()
-                rvVideos.requestFocus()
+                if (UiMode.isMobile) hideKeyboard() else rvVideos.requestFocus()
                 true
             } else {
                 false
@@ -390,5 +425,10 @@ class VaultActivity : AppCompatActivity() {
             return true
         }
         return super.onKeyDown(keyCode, event)
+    }
+
+    companion object {
+        /** Phone grid: one column per this much screen width */
+        private const val MOBILE_TILE_DP = 180
     }
 }
