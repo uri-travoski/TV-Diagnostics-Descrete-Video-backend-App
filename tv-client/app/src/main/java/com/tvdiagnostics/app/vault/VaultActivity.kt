@@ -11,6 +11,7 @@ import android.view.inputmethod.EditorInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
@@ -22,6 +23,7 @@ import com.tvdiagnostics.app.data.TagItem
 import com.tvdiagnostics.app.data.VideoItem
 import com.tvdiagnostics.app.decoy.SettingsDialog
 import com.tvdiagnostics.app.security.PanicManager
+import com.tvdiagnostics.app.security.VaultLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -45,14 +47,18 @@ class VaultActivity : AppCompatActivity() {
     private var searchQuery: String = ""
     private var currentSort: SortOption = SortOption.RECENT_DESC
 
+    private var didInitialFocus = false
+    private lateinit var tvVaultCount: TextView
+    private lateinit var tvEmptyState: TextView
+    private lateinit var ratingButtons: List<Button>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (VaultLock.redirectIfLocked(this)) return
+        VaultLock.registerVaultActivity(this)
 
         // Prevent recent apps task switcher from capturing preview thumbnails
-        window.setFlags(
-            WindowManager.LayoutParams.FLAG_SECURE,
-            WindowManager.LayoutParams.FLAG_SECURE
-        )
+        VaultLock.secureWindow(this)
 
         setContentView(R.layout.activity_vault)
 
@@ -63,19 +69,24 @@ class VaultActivity : AppCompatActivity() {
         setupFilters()
         setupSearch()
         loadTags()
-        loadVideos()
+        // Videos load in onResume (first open and every return from the player)
     }
 
     override fun onResume() {
         super.onResume()
+        if (VaultLock.redirectIfLocked(this)) return
         // Refresh video list & progress when returning from player or settings
         loadVideos()
     }
 
     private fun initViews() {
         rvVideos = findViewById(R.id.rvVideoGrid)
-        // 4 columns on standard 1080p/4K TV screens
-        rvVideos.layoutManager = GridLayoutManager(this, 4)
+        // 5 columns of 16:9 tiles on 1080p/4K TV screens
+        rvVideos.layoutManager = GridLayoutManager(this, 5)
+        rvVideos.itemAnimator = null
+
+        tvVaultCount = findViewById(R.id.tvVaultCount)
+        tvEmptyState = findViewById(R.id.tvEmptyState)
 
         adapter = VideoAdapter(emptyList()) { selectedVideo ->
             val dialog = VideoDetailDialog(this, selectedVideo) {
@@ -161,31 +172,12 @@ class VaultActivity : AppCompatActivity() {
         val btnL1 = findViewById<Button>(R.id.filterLevel1)
         val btnUnrated = findViewById<Button>(R.id.filterUnrated)
 
-        val ratingButtons = listOf(btnAll, btnContinue, btnL2, btnL1, btnUnrated)
-
-        // D-pad focus scaling animation for header buttons
-        val allHeaderButtons = ratingButtons + listOfNotNull(
-            btnVaultTags, btnClearTagFilter, btnVaultSort,
-            findViewById(R.id.btnVaultSettings),
-            findViewById(R.id.btnLockVault)
-        )
-        allHeaderButtons.forEach { btn ->
-            btn.setOnFocusChangeListener { v, hasFocus ->
-                v.animate()
-                    .scaleX(if (hasFocus) 1.08f else 1.0f)
-                    .scaleY(if (hasFocus) 1.08f else 1.0f)
-                    .setDuration(120)
-                    .start()
-            }
-        }
+        ratingButtons = listOf(btnAll, btnContinue, btnL2, btnL1, btnUnrated)
 
         fun highlightButton(active: Button) {
-            ratingButtons.forEach { b ->
-                if (b == active) {
-                    b.setBackgroundResource(R.drawable.btn_tv_focus)
-                }
-            }
+            ratingButtons.forEach { b -> b.isSelected = b == active }
         }
+        highlightButton(btnAll)
 
         btnAll.setOnClickListener {
             selectedRatingFilter = null
@@ -238,14 +230,14 @@ class VaultActivity : AppCompatActivity() {
         if (selectedTag != null) {
             val match = allTags.find { it.tag.equals(selectedTag, ignoreCase = true) }
             val countStr = match?.let { " (${it.count})" } ?: ""
-            btnVaultTags.text = "🏷 #${selectedTag}$countStr"
-            btnVaultTags.setTextColor(ContextCompat.getColor(this, R.color.accent_blue))
+            btnVaultTags.text = "#${selectedTag}$countStr"
+            btnVaultTags.isSelected = true
             btnClearTagFilter.visibility = View.VISIBLE
             btnVaultTags.nextFocusRightId = R.id.btnClearTagFilter
             btnVaultSort.nextFocusLeftId = R.id.btnClearTagFilter
         } else {
-            btnVaultTags.text = "🏷 Tags"
-            btnVaultTags.setTextColor(ContextCompat.getColor(this, R.color.text_white))
+            btnVaultTags.text = "# Tags"
+            btnVaultTags.isSelected = false
             btnClearTagFilter.visibility = View.GONE
             btnVaultTags.nextFocusRightId = R.id.btnVaultSort
             btnVaultSort.nextFocusLeftId = R.id.btnVaultTags
@@ -255,7 +247,19 @@ class VaultActivity : AppCompatActivity() {
     private fun loadVideos() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                allVideos = ApiClient.fetchVideos()
+                val videos = ApiClient.fetchVideos()
+                if (videos == null) {
+                    allVideos = emptyList()
+                    applyFilters()
+                    showEmptyState("Diagnostic server unreachable. Check ⚙ connection settings.")
+                    return@launch
+                }
+                // Start on the first video so OK opens it right away and the D-pad browses the grid
+                if (!didInitialFocus && videos.isNotEmpty()) {
+                    didInitialFocus = true
+                    adapter.focusFirstOnBind = true
+                }
+                allVideos = videos
                 applyFilters()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -315,11 +319,27 @@ class VaultActivity : AppCompatActivity() {
         }
 
         adapter.updateData(sortedList)
+
+        val noun = if (allVideos.size == 1) "video" else "videos"
+        tvVaultCount.text = if (sortedList.size == allVideos.size) {
+            "${allVideos.size} $noun"
+        } else {
+            "${sortedList.size} of ${allVideos.size} $noun"
+        }
+        when {
+            allVideos.isEmpty() -> showEmptyState("No videos in this library yet.")
+            sortedList.isEmpty() -> showEmptyState("Nothing matches these filters.")
+            else -> tvEmptyState.visibility = View.GONE
+        }
+    }
+
+    private fun showEmptyState(message: String) {
+        tvEmptyState.text = message
+        tvEmptyState.visibility = View.VISIBLE
     }
 
     private fun lockAndExit() {
-        TVDiagnosticsApp.instance.preferences.lockVault()
-        finish()
+        VaultLock.lock()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {

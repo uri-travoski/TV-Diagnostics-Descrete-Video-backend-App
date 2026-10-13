@@ -25,4 +25,5 @@ WORKDIR /project
 COPY . .
 
 # Build APK and copy to output volume /dist
-CMD ./gradlew assembleDebug --no-daemon && mkdir -p /dist && cp app/build/outputs/apk/debug/*.apk /dist/tv-diagnostics.apk
+# Needs keystore/ (release signing key, not in git) in the build context
+CMD ./gradlew assembleRelease --no-daemon && mkdir -p /dist && cp app/build/outputs/apk/release/app-release.apk /dist/tv-diagnostics.apk

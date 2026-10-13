@@ -1,6 +1,15 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+// Signing key, kept out of git in tv-client/keystore/ (back it up!). It is the key that signed
+// v1.0.x; every published APK must be signed with it or it can't install over the existing app.
+val releaseKeyProps = Properties().apply {
+    val f = rootProject.file("keystore/keystore.properties")
+    if (f.exists()) f.inputStream().use { load(it) }
 }
 
 android {
@@ -11,8 +20,8 @@ android {
         applicationId = "com.tvdiagnostics.app"
         minSdk = 21
         targetSdk = 34
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -21,8 +30,23 @@ android {
         buildConfig = true
     }
 
+    signingConfigs {
+        if (releaseKeyProps.isNotEmpty()) {
+            create("release") {
+                storeFile = rootProject.file("keystore/" + releaseKeyProps.getProperty("storeFile"))
+                storePassword = releaseKeyProps.getProperty("storePassword")
+                keyAlias = releaseKeyProps.getProperty("keyAlias")
+                keyPassword = releaseKeyProps.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            // v1.0.x shipped as the debug variant, so TVs have "com.tvdiagnostics.app.debug"
+            // installed; releases keep that package name so they update in place.
+            applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -31,6 +55,7 @@ android {
         }
         debug {
             applicationIdSuffix = ".debug"
+            signingConfig = signingConfigs.findByName("release")
         }
     }
 

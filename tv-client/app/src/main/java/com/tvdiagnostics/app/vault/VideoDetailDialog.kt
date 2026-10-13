@@ -64,11 +64,11 @@ class VideoDetailDialog(
             tvProgress.text = "Watched: ${video.getFormattedWatchedTime()} (${video.getProgressPercentage()}%)"
             btnResume.visibility = View.VISIBLE
             btnResume.text = context.getString(R.string.btn_resume, video.getFormattedWatchedTime())
-            btnResume.requestFocus()
+            btnResume.post { btnResume.requestFocus() }
         } else {
             tvProgress.visibility = View.GONE
             btnResume.visibility = View.GONE
-            btnPlayStart.requestFocus()
+            btnPlayStart.post { btnPlayStart.requestFocus() }
         }
 
         // Tags Section

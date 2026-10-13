@@ -46,3 +46,6 @@ Thumbs.db
 *~
 *.swp
 *.swo
+
+# App signing key (NEVER COMMIT; back it up: every in-app update must be signed with it)
+tv-client/keystore/

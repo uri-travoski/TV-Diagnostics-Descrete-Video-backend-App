@@ -7,43 +7,103 @@
     android:background="#000000"
     android:keepScreenOn="true">
 
-    <!-- Media3 PlayerView with Hardware Decoding -->
+    <!-- Video only: no Media3 controller (its dark scrim dims the picture) -->
     <androidx.media3.ui.PlayerView
         android:id="@+id/playerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:use_controller="true"
+        android:keepScreenOn="true"
+        app:use_controller="false"
         app:show_buffering="when_playing"
+        app:shutter_background_color="#000000"
         app:resize_mode="fit" />
 
-    <!-- Top Overlay (Hidden after 3s) -->
+    <!-- Minimal bottom overlay: play/pause state, time, thin progress line. No background. -->
     <LinearLayout
-        android:id="@+id/topOverlay"
+        android:id="@+id/bottomOverlay"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#CC000000"
-        android:padding="16dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
+        android:layout_gravity="bottom"
+        android:layout_marginStart="28dp"
+        android:layout_marginEnd="28dp"
+        android:layout_marginBottom="18dp"
+        android:orientation="vertical"
         android:visibility="gone">
 
-        <TextView
-            android:id="@+id/tvPlayerTitle"
-            android:layout_width="0dp"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textColor="@color/text_white"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:text="Video Title" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:layout_marginBottom="6dp">
 
-        <TextView
-            android:id="@+id/tvPlayerPanicHint"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textColor="#88FFFFFF"
-            android:textSize="12sp"
-            android:text="Double-click [BACK] for Instant Panic Shield" />
+            <ImageView
+                android:id="@+id/ivPlayState"
+                android:layout_width="18dp"
+                android:layout_height="18dp"
+                android:alpha="0.6"
+                android:src="@drawable/ic_pause"
+                android:contentDescription="@null" />
+
+            <TextView
+                android:id="@+id/tvPlayerTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:textColor="#B3FFFFFF"
+                android:textSize="12sp"
+                android:shadowColor="#99000000"
+                android:shadowRadius="3"
+                android:shadowDx="0"
+                android:shadowDy="1"
+                android:text="00:00 / 00:00" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <TextView
+                android:id="@+id/tvSpeedBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#80FFFFFF"
+                android:textSize="11sp"
+                android:shadowColor="#99000000"
+                android:shadowRadius="3"
+                android:text="▲ 1×" />
+        </LinearLayout>
+
+        <!-- Thin semi-transparent progress line -->
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="2dp">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#26FFFFFF" />
+
+            <View
+                android:id="@+id/progressFill"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#99FFFFFF"
+                android:scaleX="0" />
+        </FrameLayout>
     </LinearLayout>
+
+    <!-- Transparent playback speed menu, bottom right (opened with D-pad UP) -->
+    <LinearLayout
+        android:id="@+id/speedMenu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="28dp"
+        android:layout_marginBottom="52dp"
+        android:background="@drawable/bg_speed_menu"
+        android:orientation="vertical"
+        android:padding="6dp"
+        android:visibility="gone" />
 
 </FrameLayout>

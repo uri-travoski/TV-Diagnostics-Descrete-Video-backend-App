@@ -37,6 +37,8 @@
 
     <!-- Scrollable Detail Content to prevent any cut-off on TV viewports -->
     <ScrollView
+        android:focusable="false"
+        android:descendantFocusability="blocksDescendants"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:maxHeight="240dp"

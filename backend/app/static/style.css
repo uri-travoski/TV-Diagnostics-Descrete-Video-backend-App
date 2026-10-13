@@ -810,3 +810,21 @@ body {
     max-height: 70vh;
     background: #000;
 }
+
+/* TV Users panel */
+.users-panel { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.user-card {
+    flex: 1 1 320px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+}
+.user-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.user-meta { font-size: 12px; color: var(--text-muted); }
+.user-dirs { font-size: 11px; color: var(--text-muted); font-family: monospace; overflow-wrap: anywhere; }
+.user-card .btn:disabled { opacity: 0.45; cursor: default; }

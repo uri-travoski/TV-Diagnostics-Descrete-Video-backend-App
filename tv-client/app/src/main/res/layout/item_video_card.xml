@@ -1,123 +1,154 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="260dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:focusable="true"
-    android:clickable="true"
-    android:background="@drawable/btn_tv_focus"
-    android:padding="8dp"
-    android:layout_margin="10dp">
+    android:padding="7dp"
+    android:clipChildren="false"
+    android:clipToPadding="false">
 
-    <!-- Thumbnail Container -->
-    <FrameLayout
+    <!-- 16:9 tile: thumbnail, storyboard preview layer on top, title on a bottom shade -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/cardFrame"
         android:layout_width="match_parent"
-        android:layout_height="138dp">
+        android:layout_height="wrap_content"
+        android:focusable="true"
+        android:clickable="true"
+        android:foreground="@drawable/bg_card_focus"
+        android:background="@drawable/bg_card"
+        android:clipToOutline="true">
 
         <ImageView
             android:id="@+id/ivThumbnail"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             android:scaleType="centerCrop"
-            android:background="#050811" />
+            android:contentDescription="@null"
+            app:layout_constraintDimensionRatio="16:9"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+
+        <ImageView
+            android:id="@+id/ivPreview"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:scaleType="centerCrop"
+            android:contentDescription="@null"
+            app:layout_constraintTop_toTopOf="@id/ivThumbnail"
+            app:layout_constraintBottom_toBottomOf="@id/ivThumbnail"
+            app:layout_constraintStart_toStartOf="@id/ivThumbnail"
+            app:layout_constraintEnd_toEndOf="@id/ivThumbnail" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:background="@drawable/bg_card_shade"
+            app:layout_constraintHeight_percent="0.5"
+            app:layout_constraintBottom_toBottomOf="@id/ivThumbnail"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
         <TextView
-            android:id="@+id/tvDurationBadge"
+            android:id="@+id/tvCircleRating"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="bottom|end"
-            android:layout_margin="6dp"
-            android:background="#CC000000"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_card_badge"
             android:paddingStart="6dp"
             android:paddingEnd="6dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp"
-            android:textColor="@color/text_white"
+            android:textColor="@color/circle_filled"
             android:textSize="11sp"
-            android:text="00:00" />
+            android:text="●"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
 
         <TextView
             android:id="@+id/tvResBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="top|start"
-            android:layout_margin="6dp"
-            android:background="#CC1E293B"
+            android:layout_margin="8dp"
+            android:background="@drawable/bg_card_badge"
             android:paddingStart="5dp"
             android:paddingEnd="5dp"
-            android:paddingTop="2dp"
-            android:paddingBottom="2dp"
-            android:textColor="@color/text_white"
-            android:textSize="10sp"
+            android:textColor="#CCFFFFFF"
+            android:textSize="9sp"
             android:textStyle="bold"
-            android:text="HD" />
-    </FrameLayout>
-
-    <!-- Progress Indicator Bar -->
-    <ProgressBar
-        android:id="@+id/pbWatchProgress"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="4dp"
-        android:max="100"
-        android:progress="0"
-        android:progressTint="@color/accent_blue"
-        android:progressBackgroundTint="#334155" />
-
-    <!-- Title & Discreet Rating Row -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="8dp"
-        android:gravity="center_vertical">
+            android:text="HD"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent" />
 
         <TextView
             android:id="@+id/tvVideoTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:maxLines="2"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="6dp"
+            android:layout_marginBottom="9dp"
+            android:maxLines="1"
             android:ellipsize="end"
             android:textColor="@color/text_white"
-            android:textSize="14sp"
+            android:textSize="13sp"
             android:textStyle="bold"
-            android:text="Video Title" />
+            android:shadowColor="#CC000000"
+            android:shadowRadius="3"
+            android:text="Video Title"
+            app:layout_constraintBottom_toBottomOf="@id/ivThumbnail"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/tvDurationBadge" />
 
-        <!-- Discreet Circle Rating: ○, ●, or ●● -->
         <TextView
-            android:id="@+id/tvCircleRating"
+            android:id="@+id/tvDurationBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:textColor="@color/circle_filled"
-            android:textSize="14sp"
-            android:textStyle="bold"
-            android:text="○" />
-    </LinearLayout>
+            android:layout_marginEnd="10dp"
+            android:textColor="#CCFFFFFF"
+            android:textSize="11sp"
+            android:shadowColor="#CC000000"
+            android:shadowRadius="3"
+            android:text="00:00"
+            app:layout_constraintBaseline_toBaselineOf="@id/tvVideoTitle"
+            app:layout_constraintEnd_toEndOf="parent" />
 
-    <!-- Tags Row (e.g. #sample #demo) -->
+        <!-- Watched progress line along the bottom edge -->
+        <ProgressBar
+            android:id="@+id/pbWatchProgress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="0dp"
+            android:layout_height="3dp"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="@color/accent_blue"
+            android:progressBackgroundTint="#33FFFFFF"
+            app:layout_constraintBottom_toBottomOf="@id/ivThumbnail"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <!-- Tags / notes under the tile (only when present) -->
     <TextView
         android:id="@+id/tvTagsSnippet"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="5dp"
+        android:paddingStart="2dp"
         android:maxLines="1"
         android:ellipsize="end"
-        android:textColor="#93C5FD"
-        android:textSize="11sp"
-        android:visibility="gone"
-        android:layout_marginTop="3dp" />
+        android:textColor="#8093C5FD"
+        android:textSize="10sp"
+        android:visibility="gone" />
 
-    <!-- Optional Notes Snippet (shown only when unlocked) -->
     <TextView
         android:id="@+id/tvNotesSnippet"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:paddingStart="2dp"
         android:maxLines="1"
         android:ellipsize="end"
         android:textColor="@color/text_muted"
-        android:textSize="11sp"
-        android:visibility="gone"
-        android:layout_marginTop="3dp" />
+        android:textSize="10sp"
+        android:visibility="gone" />
 
 </LinearLayout>

@@ -4,218 +4,167 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@color/bg_dark"
-    android:paddingStart="24dp"
-    android:paddingEnd="24dp"
-    android:paddingTop="14dp">
+    android:paddingStart="36dp"
+    android:paddingEnd="36dp"
+    android:paddingTop="20dp">
 
-    <!-- Unified Single Top Bar: Everything fits in 1 row -->
+    <!-- Header: library name + count, options and lock on the right -->
     <LinearLayout
-        android:id="@+id/topBar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="14dp">
 
-        <!-- D-pad focusable Search Input -->
+        <TextView
+            android:id="@+id/tvVaultTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/vault_title"
+            android:textColor="@color/text_white"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvVaultCount"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:textColor="@color/text_muted"
+            android:textSize="13sp"
+            android:text="" />
+
+        <Button
+            android:id="@+id/btnVaultSettings"
+            style="@style/ChipStyle"
+            android:text="⚙"
+            android:textSize="14sp"
+            android:nextFocusRight="@+id/btnLockVault"
+            android:nextFocusDown="@+id/etVaultSearch" />
+
+        <Button
+            android:id="@+id/btnLockVault"
+            style="@style/ChipStyle"
+            android:layout_marginEnd="0dp"
+            android:text="🔒"
+            android:textSize="13sp"
+            android:nextFocusLeft="@+id/btnVaultSettings"
+            android:nextFocusDown="@+id/etVaultSearch" />
+    </LinearLayout>
+
+    <!-- Filter bar: search, rating / continue chips, tags, sort -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="14dp">
+
         <EditText
             android:id="@+id/etVaultSearch"
-            android:layout_width="160dp"
-            android:layout_height="38dp"
-            android:background="@drawable/btn_tv_focus"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:hint="@string/search_hint"
-            android:textColorHint="#475569"
-            android:textColor="@color/text_white"
+            android:layout_width="220dp"
+            android:layout_height="34dp"
+            android:layout_marginEnd="14dp"
+            android:background="@drawable/bg_chip"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:hint="🔍  Search"
+            android:textColorHint="#80F1F5F9"
+            android:textColor="@color/chip_text"
             android:textSize="12sp"
             android:imeOptions="actionSearch"
             android:inputType="text"
+            android:singleLine="true"
             android:focusable="true"
-            android:layout_marginEnd="6dp"
+            android:nextFocusUp="@+id/btnVaultSettings"
             android:nextFocusRight="@+id/filterAll"
             android:nextFocusDown="@+id/rvVideoGrid" />
 
-        <!-- Symbol-Only Rating Filters (D-pad focusable) -->
         <Button
             android:id="@+id/filterAll"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            style="@style/ChipStyle"
             android:text="@string/category_all"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/text_white"
-            android:textSize="12sp"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:layout_marginEnd="4dp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/etVaultSearch"
-            android:nextFocusRight="@+id/filterContinue"
-            android:nextFocusDown="@+id/rvVideoGrid" />
+            android:nextFocusUp="@+id/btnVaultSettings" />
 
         <Button
             android:id="@+id/filterContinue"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            style="@style/ChipStyle"
             android:text="@string/category_continue"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/text_white"
-            android:textSize="12sp"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:layout_marginEnd="4dp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/filterAll"
-            android:nextFocusRight="@+id/filterLevel2"
-            android:nextFocusDown="@+id/rvVideoGrid" />
+            android:nextFocusUp="@+id/btnVaultSettings" />
 
         <Button
             android:id="@+id/filterLevel2"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            style="@style/ChipStyle"
             android:text="●●"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/circle_filled"
-            android:textSize="14sp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:layout_marginEnd="4dp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/filterContinue"
-            android:nextFocusRight="@+id/filterLevel1"
-            android:nextFocusDown="@+id/rvVideoGrid" />
+            android:nextFocusUp="@+id/btnVaultSettings" />
 
         <Button
             android:id="@+id/filterLevel1"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            style="@style/ChipStyle"
             android:text="●"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/circle_filled"
-            android:textSize="14sp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:layout_marginEnd="4dp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/filterLevel2"
-            android:nextFocusRight="@+id/filterUnrated"
-            android:nextFocusDown="@+id/rvVideoGrid" />
+            android:nextFocusUp="@+id/btnVaultSettings" />
 
         <Button
             android:id="@+id/filterUnrated"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            style="@style/ChipStyle"
             android:text="○"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/circle_empty"
-            android:textSize="14sp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:layout_marginEnd="6dp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/filterLevel1"
-            android:nextFocusRight="@+id/btnVaultTags"
-            android:nextFocusDown="@+id/rvVideoGrid" />
+            android:nextFocusUp="@+id/btnVaultSettings" />
 
-        <!-- Tag Selector Button -->
+        <View
+            android:layout_width="1dp"
+            android:layout_height="20dp"
+            android:layout_marginStart="6dp"
+            android:layout_marginEnd="14dp"
+            android:background="#1FFFFFFF" />
+
         <Button
             android:id="@+id/btnVaultTags"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:text="🏷 Tags"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/text_white"
-            android:textSize="11sp"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:layout_marginEnd="4dp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/filterUnrated"
-            android:nextFocusRight="@+id/btnClearTagFilter"
-            android:nextFocusDown="@+id/rvVideoGrid" />
+            style="@style/ChipStyle"
+            android:text="# Tags"
+            android:nextFocusUp="@+id/btnVaultSettings" />
 
-        <!-- Quick Clear Tag Button -->
         <Button
             android:id="@+id/btnClearTagFilter"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            style="@style/ChipStyle"
             android:text="✕"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/danger_red"
-            android:textSize="11sp"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:layout_marginEnd="4dp"
             android:visibility="gone"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/btnVaultTags"
-            android:nextFocusRight="@+id/btnVaultSort"
-            android:nextFocusDown="@+id/rvVideoGrid" />
+            android:nextFocusUp="@+id/btnVaultSettings" />
 
-        <!-- Sort Button -->
         <Button
             android:id="@+id/btnVaultSort"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
+            style="@style/ChipStyle"
             android:text="⇅ Sort"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/accent_blue"
-            android:textSize="11sp"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:layout_marginEnd="6dp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/btnVaultTags"
-            android:nextFocusRight="@+id/btnVaultSettings"
-            android:nextFocusDown="@+id/rvVideoGrid" />
-
-        <!-- Spacer pushes settings & lock to right side -->
-        <View
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:layout_weight="1" />
-
-        <!-- Options / Settings Button -->
-        <Button
-            android:id="@+id/btnVaultSettings"
-            android:layout_width="wrap_content"
-            android:layout_height="38dp"
-            android:text="⚙ Options"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/text_muted"
-            android:textSize="11sp"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:layout_marginEnd="6dp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/btnVaultSort"
-            android:nextFocusRight="@+id/btnLockVault"
-            android:nextFocusDown="@+id/rvVideoGrid" />
-
-        <!-- Lock Button: ONLY lock icon "🔒" -->
-        <Button
-            android:id="@+id/btnLockVault"
-            android:layout_width="44dp"
-            android:layout_height="38dp"
-            android:text="🔒"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/danger_red"
-            android:textSize="15sp"
-            android:focusable="true"
-            android:nextFocusLeft="@+id/btnVaultSettings"
-            android:nextFocusDown="@+id/rvVideoGrid" />
+            android:nextFocusUp="@+id/btnVaultSettings" />
     </LinearLayout>
 
-    <!-- TV Grid View for Videos -->
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvVideoGrid"
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:clipToPadding="false"
-        android:paddingBottom="24dp"
-        android:focusable="false"
-        android:descendantFocusability="afterDescendants"
-        android:nextFocusUp="@+id/filterAll" />
+        android:layout_weight="1">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvVideoGrid"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:clipChildren="false"
+            android:paddingTop="4dp"
+            android:paddingBottom="32dp"
+            android:focusable="false"
+            android:descendantFocusability="afterDescendants"
+            android:nextFocusUp="@+id/filterAll" />
+
+        <TextView
+            android:id="@+id/tvEmptyState"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:textColor="@color/text_muted"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:visibility="gone"
+            android:text="" />
+    </FrameLayout>
 
 </LinearLayout>

@@ -1,10 +1,11 @@
 import sqlite3
 import shutil
 import os
+import secrets
 from pathlib import Path
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-from .config import DB_PATH, BACKUP_DIR
+from typing import Optional, List, Dict, Any, Tuple
+from .config import DB_PATH, BACKUP_DIR, USERS
 
 def get_connection() -> sqlite3.Connection:
     conn = sqlite3.connect(str(DB_PATH), timeout=15.0)
@@ -139,6 +140,26 @@ def init_db():
     if "tags" not in col_names:
         cursor.execute("ALTER TABLE videos ADD COLUMN tags TEXT NOT NULL DEFAULT ''")
 
+    # Per-user vault PINs (changeable from the TV app, reset to default from the admin console)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY,
+            pin TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+    """)
+    now = datetime.utcnow().isoformat()
+    for user_id, user in USERS.items():
+        cursor.execute(
+            "INSERT OR IGNORE INTO users (id, pin, updated_at) VALUES (?, ?, ?)",
+            (user_id, user["default_pin"], now)
+        )
+    cursor.execute("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+    cursor.execute(
+        "INSERT OR IGNORE INTO settings (key, value) VALUES ('session_secret', ?)",
+        (secrets.token_hex(32),)
+    )
+
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_filepath ON videos(filepath)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_rating ON videos(rating)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_tags ON videos(tags)")
@@ -271,17 +292,35 @@ def upsert_video(video_info: Dict[str, Any]) -> int:
     conn.close()
     return video_id
 
+def _dirs_clause(dirs: Optional[List[str]]) -> Tuple[str, List[Any]]:
+    """
+    SQL restricting videos to files under the given folders (a user's library).
+    None means no restriction (admin console); an empty list matches nothing.
+    """
+    if dirs is None:
+        return "", []
+    if not dirs:
+        return " AND 0", []
+    parts = []
+    params: List[Any] = []
+    for d in dirs:
+        prefix = d.rstrip("/") + "/"
+        parts.append("substr(filepath, 1, ?) = ?")
+        params.extend([len(prefix), prefix])
+    return " AND (" + " OR ".join(parts) + ")", params
+
 def get_all_videos(
     search: Optional[str] = None,
     rating: Optional[int] = None,
     tag: Optional[str] = None,
-    sort_by: str = "recent_desc"
+    sort_by: str = "recent_desc",
+    dirs: Optional[List[str]] = None
 ) -> List[Dict[str, Any]]:
     conn = get_connection()
     cursor = conn.cursor()
     
-    query = "SELECT * FROM videos WHERE 1=1"
-    params: List[Any] = []
+    dir_sql, params = _dirs_clause(dirs)
+    query = "SELECT * FROM videos WHERE 1=1" + dir_sql
     
     if search:
         query += " AND (title LIKE ? OR filename LIKE ? OR notes LIKE ? OR tags LIKE ?)"
@@ -375,28 +414,29 @@ def reset_progress(video_id: int) -> bool:
     conn.close()
     return success
 
-def reset_all_progress() -> int:
+def reset_all_progress(dirs: Optional[List[str]] = None) -> int:
     conn = get_connection()
     cursor = conn.cursor()
     now = datetime.utcnow().isoformat()
+    dir_sql, dir_params = _dirs_clause(dirs)
     cursor.execute("""
         UPDATE videos SET
             watched_seconds = 0.0,
             completed = 0,
             last_watched_at = NULL,
             updated_at = ?
-        WHERE id = ?
-    """, (now,))
+        WHERE 1=1""" + dir_sql, [now] + dir_params)
     count = cursor.rowcount
     conn.commit()
     conn.close()
     return count
 
-def get_all_tags(prefix: Optional[str] = None) -> List[Dict[str, Any]]:
+def get_all_tags(prefix: Optional[str] = None, dirs: Optional[List[str]] = None) -> List[Dict[str, Any]]:
     """Returns all unique tags with count of associated videos, optionally filtered by prefix."""
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT tags FROM videos WHERE tags != ''")
+    dir_sql, dir_params = _dirs_clause(dirs)
+    cursor.execute("SELECT tags FROM videos WHERE tags != ''" + dir_sql, dir_params)
     rows = cursor.fetchall()
     conn.close()
     
@@ -504,3 +544,36 @@ def delete_missing_videos(existing_filepaths: set) -> int:
     conn.commit()
     conn.close()
     return deleted_count
+
+
+# --- Users & PINs ---
+
+def get_session_secret() -> str:
+    conn = get_connection()
+    row = conn.execute("SELECT value FROM settings WHERE key = 'session_secret'").fetchone()
+    conn.close()
+    return row["value"]
+
+def get_user_pins() -> Dict[int, str]:
+    conn = get_connection()
+    rows = conn.execute("SELECT id, pin FROM users").fetchall()
+    conn.close()
+    return {row["id"]: row["pin"] for row in rows}
+
+def find_user_by_pin(pin: str) -> Optional[int]:
+    for user_id, user_pin in get_user_pins().items():
+        if user_id in USERS and user_pin == pin:
+            return user_id
+    return None
+
+def set_user_pin(user_id: int, pin: str) -> bool:
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE users SET pin = ?, updated_at = ? WHERE id = ?",
+        (pin, datetime.utcnow().isoformat(), user_id)
+    )
+    success = cursor.rowcount > 0
+    conn.commit()
+    conn.close()
+    return success

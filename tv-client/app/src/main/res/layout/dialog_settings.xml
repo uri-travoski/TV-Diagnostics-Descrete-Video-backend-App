@@ -91,33 +91,129 @@
                 android:textSize="11sp"
                 android:layout_marginBottom="14dp" />
 
-            <!-- Custom PIN Configuration Section -->
+            <!-- Change My Code: the signed-in user's own 6-digit vault code -->
             <TextView
+                android:tag="vaultOnly"
+                android:id="@+id/tvMyCodeLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Vault Diagnostic PIN (4–6 Digits):"
+                android:text="Change My Code (6 Digits):"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp"
                 android:layout_marginBottom="6dp" />
 
-            <EditText
-                android:id="@+id/etPinCode"
+            <LinearLayout
+                android:tag="vaultOnly"
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="6dp">
+
+                <EditText
+                    android:id="@+id/etNewPin"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="#0F172A"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:textColor="@color/text_white"
+                    android:textSize="13sp"
+                    android:hint="New code"
+                    android:textColorHint="#475569"
+                    android:inputType="numberPassword"
+                    android:maxLength="6"
+                    android:focusable="true"
+                    android:layout_marginEnd="8dp" />
+
+                <EditText
+                    android:id="@+id/etConfirmPin"
+                    android:layout_width="0dp"
+                    android:layout_height="44dp"
+                    android:layout_weight="1"
+                    android:background="#0F172A"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
+                    android:textColor="@color/text_white"
+                    android:textSize="13sp"
+                    android:hint="Repeat new code"
+                    android:textColorHint="#475569"
+                    android:inputType="numberPassword"
+                    android:maxLength="6"
+                    android:focusable="true"
+                    android:layout_marginEnd="8dp" />
+
+                <Button
+                    android:id="@+id/btnChangePin"
+                    android:layout_width="wrap_content"
+                    android:layout_height="44dp"
+                    android:text="Change"
+                    android:background="@drawable/btn_tv_focus"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="12sp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:focusable="true" />
+            </LinearLayout>
+
+            <TextView
+                android:tag="vaultOnly"
+                android:id="@+id/tvChangePinStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:visibility="gone"
+                android:layout_marginBottom="6dp" />
+
+            <View
+                android:tag="vaultOnly"
+                android:layout_width="match_parent"
+                android:layout_height="12dp" />
+
+            <!-- App Updates from GitHub Releases -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="App Updates:"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:layout_marginBottom="6dp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
                 android:background="#0F172A"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:textColor="@color/text_white"
-                android:textSize="13sp"
-                android:hint="482061"
-                android:textColorHint="#475569"
-                android:inputType="numberPassword"
-                android:maxLength="6"
-                android:focusable="true"
-                android:layout_marginBottom="18dp" />
+                android:padding="12dp"
+                android:layout_marginBottom="18dp">
+
+                <TextView
+                    android:id="@+id/tvUpdateStatus"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Installed: v1.1.0"
+                    android:textColor="@color/text_white"
+                    android:textSize="13sp" />
+
+                <Button
+                    android:id="@+id/btnCheckUpdate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:background="@drawable/btn_tv_focus"
+                    android:text="Check for Update"
+                    android:textColor="@color/accent_blue"
+                    android:textSize="12sp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:focusable="true" />
+            </LinearLayout>
 
             <!-- Notes Feature Toggle Section -->
             <TextView
+                android:tag="vaultOnly"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Video Notes Visibility (4-Digit PIN):"
@@ -126,6 +222,7 @@
                 android:layout_marginBottom="6dp" />
 
             <LinearLayout
+                android:tag="vaultOnly"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
@@ -156,6 +253,7 @@
 
             <!-- Inactivity Auto-Lock Toggle Section -->
             <TextView
+                android:tag="vaultOnly"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Inactivity Auto-Lock (15m Pause / 5m Ended):"
@@ -164,6 +262,7 @@
                 android:layout_marginBottom="6dp" />
 
             <LinearLayout
+                android:tag="vaultOnly"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"

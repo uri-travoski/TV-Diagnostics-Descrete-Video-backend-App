@@ -14,7 +14,10 @@ import androidx.core.content.ContextCompat
 import com.google.gson.Gson
 import com.tvdiagnostics.app.R
 import com.tvdiagnostics.app.TVDiagnosticsApp
+import com.tvdiagnostics.app.data.ApiClient
 import com.tvdiagnostics.app.data.ServerStatus
+import com.tvdiagnostics.app.security.VaultLock
+import com.tvdiagnostics.app.update.AppUpdater
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -30,7 +33,14 @@ class SettingsDialog(
 
     private lateinit var etServerUrl: EditText
     private lateinit var tvDeviceIpHint: TextView
-    private lateinit var etPinCode: EditText
+    private lateinit var etNewPin: EditText
+    private lateinit var etConfirmPin: EditText
+    private lateinit var btnChangePin: Button
+    private lateinit var tvChangePinStatus: TextView
+    private lateinit var tvUpdateStatus: TextView
+    private lateinit var btnCheckUpdate: Button
+    private var availableUpdate: AppUpdater.Release? = null
+    private var isUpdating = false
     private lateinit var tvNotesStatus: TextView
     private lateinit var btnToggleNotes: Button
     private lateinit var tvAutoLockStatus: TextView
@@ -50,7 +60,12 @@ class SettingsDialog(
 
         etServerUrl = findViewById(R.id.etServerUrl)
         tvDeviceIpHint = findViewById(R.id.tvDeviceIpHint)
-        etPinCode = findViewById(R.id.etPinCode)
+        etNewPin = findViewById(R.id.etNewPin)
+        etConfirmPin = findViewById(R.id.etConfirmPin)
+        btnChangePin = findViewById(R.id.btnChangePin)
+        tvChangePinStatus = findViewById(R.id.tvChangePinStatus)
+        tvUpdateStatus = findViewById(R.id.tvUpdateStatus)
+        btnCheckUpdate = findViewById(R.id.btnCheckUpdate)
         tvNotesStatus = findViewById(R.id.tvNotesStatus)
         btnToggleNotes = findViewById(R.id.btnToggleNotes)
         tvAutoLockStatus = findViewById(R.id.tvAutoLockStatus)
@@ -62,7 +77,7 @@ class SettingsDialog(
         val pInfo = try {
             context.packageManager.getPackageInfo(context.packageName, 0)
         } catch (e: Exception) { null }
-        val verName = pInfo?.versionName ?: "1.0.1"
+        val verName = pInfo?.versionName ?: "?"
         val verCode = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             pInfo?.longVersionCode ?: 2L
         } else {
@@ -73,7 +88,19 @@ class SettingsDialog(
 
         val prefs = TVDiagnosticsApp.instance.preferences
         etServerUrl.setText(prefs.serverUrl)
-        etPinCode.setText(prefs.pinCode)
+        // Before unlocking (opened from the code prompt) only connection and update settings show
+        if (VaultLock.session == null) {
+            val body = findViewById<View>(R.id.etServerUrl).rootView
+            hideVaultOnly(body)
+        }
+
+        VaultLock.session?.let { session ->
+            findViewById<TextView>(R.id.tvMyCodeLabel).text = "Change My Code — ${session.userName} (6 Digits):"
+        }
+        tvUpdateStatus.text = "Installed: v$verName"
+
+        btnChangePin.setOnClickListener { changePin() }
+        btnCheckUpdate.setOnClickListener { checkOrInstallUpdate() }
 
         val ip = getLocalIpAddress()
         tvDeviceIpHint.text = if (ip != null) {
@@ -115,7 +142,7 @@ class SettingsDialog(
         val btnCancel = findViewById<Button>(R.id.btnSettingsCancel)
         val btnSave = findViewById<Button>(R.id.btnSettingsSave)
 
-        listOf(btnTestConnection, btnToggleNotes, btnToggleAutoLock, btnCancel, btnSave).forEach { btn ->
+        listOf(btnTestConnection, btnChangePin, btnCheckUpdate, btnToggleNotes, btnToggleAutoLock, btnCancel, btnSave).forEach { btn ->
             btn.setOnFocusChangeListener { v, hasFocus ->
                 v.animate()
                     .scaleX(if (hasFocus) 1.06f else 1.0f)
@@ -133,10 +160,6 @@ class SettingsDialog(
             val url = etServerUrl.text.toString().trim().trimEnd('/')
             if (url.isNotEmpty()) {
                 prefs.serverUrl = url
-            }
-            val pin = etPinCode.text.toString().trim()
-            if (pin.length in 4..6) {
-                prefs.pinCode = pin
             }
             Toast.makeText(context, "Settings saved", Toast.LENGTH_SHORT).show()
             dismiss()
@@ -206,6 +229,106 @@ class SettingsDialog(
             } else {
                 tvConnectionStatus.text = "🔴 Cannot connect to $targetUrl. Verify server IP, port, and Wi-Fi."
                 tvConnectionStatus.setTextColor(ContextCompat.getColor(context, R.color.danger_red))
+            }
+        }
+    }
+
+    private fun hideVaultOnly(view: View) {
+        if (view.tag == "vaultOnly") {
+            view.visibility = View.GONE
+        } else if (view is android.view.ViewGroup) {
+            for (i in 0 until view.childCount) hideVaultOnly(view.getChildAt(i))
+        }
+    }
+
+    private fun showChangePinStatus(message: String, ok: Boolean) {
+        tvChangePinStatus.text = message
+        tvChangePinStatus.setTextColor(ContextCompat.getColor(context, if (ok) R.color.accent_green else R.color.danger_red))
+        tvChangePinStatus.visibility = View.VISIBLE
+    }
+
+    private fun changePin() {
+        val newPin = etNewPin.text.toString().trim()
+        val confirm = etConfirmPin.text.toString().trim()
+        when {
+            !newPin.matches(Regex("\\d{6}")) -> {
+                showChangePinStatus("The code must be exactly 6 digits", ok = false)
+                return
+            }
+            newPin != confirm -> {
+                showChangePinStatus("The two codes don't match", ok = false)
+                return
+            }
+        }
+        btnChangePin.isEnabled = false
+        CoroutineScope(Dispatchers.Main).launch {
+            val error = ApiClient.changePin(newPin)
+            btnChangePin.isEnabled = true
+            if (error == null) {
+                etNewPin.setText("")
+                etConfirmPin.setText("")
+                showChangePinStatus("Code changed. Use the new code next time.", ok = true)
+            } else {
+                showChangePinStatus(error, ok = false)
+            }
+        }
+    }
+
+    /** First press checks GitHub; if a newer release exists the button becomes "Update to vX". */
+    private fun checkOrInstallUpdate() {
+        if (isUpdating) return
+        val release = availableUpdate
+        if (release != null) {
+            downloadAndInstall(release)
+            return
+        }
+        isUpdating = true
+        btnCheckUpdate.isEnabled = false
+        tvUpdateStatus.text = "Checking for updates..."
+        CoroutineScope(Dispatchers.Main).launch {
+            val latest = AppUpdater.fetchLatest()
+            val current = AppUpdater.currentVersion(context)
+            isUpdating = false
+            btnCheckUpdate.isEnabled = true
+            when {
+                latest == null -> tvUpdateStatus.text = "Installed: v$current · update server unreachable"
+                AppUpdater.isNewer(latest.version, current) -> {
+                    availableUpdate = latest
+                    tvUpdateStatus.text = "Installed: v$current · v${latest.version} available"
+                    btnCheckUpdate.text = "Update to v${latest.version}"
+                    btnCheckUpdate.requestFocus()
+                }
+                else -> tvUpdateStatus.text = "Installed: v$current · up to date"
+            }
+        }
+    }
+
+    private fun downloadAndInstall(release: AppUpdater.Release) {
+        if (!AppUpdater.canInstall(context)) {
+            tvUpdateStatus.text = "Allow \"Install unknown apps\" for TV Diagnostics, then press Update again"
+            if (!AppUpdater.openInstallPermissionSettings(context)) {
+                Toast.makeText(context, "Enable unknown app installs for TV Diagnostics in Android settings", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        isUpdating = true
+        btnCheckUpdate.isEnabled = false
+        tvUpdateStatus.text = "Downloading v${release.version}..."
+        CoroutineScope(Dispatchers.Main).launch {
+            val apk = AppUpdater.download(context, release) { pct ->
+                tvUpdateStatus.text = "Downloading v${release.version}... $pct%"
+            }
+            isUpdating = false
+            btnCheckUpdate.isEnabled = true
+            if (apk == null) {
+                tvUpdateStatus.text = "Download failed. Check the internet connection and try again."
+                return@launch
+            }
+            tvUpdateStatus.text = "Installing v${release.version}..."
+            try {
+                AppUpdater.install(context, apk)
+            } catch (e: Exception) {
+                tvUpdateStatus.text = "Could not open the installer: ${e.message}"
             }
         }
     }

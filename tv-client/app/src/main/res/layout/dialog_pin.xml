@@ -62,17 +62,37 @@
             android:visibility="gone"
             android:layout_marginBottom="10dp" />
 
-        <Button
-            android:id="@+id/btnPinCancel"
+        <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_height="36dp"
-            android:text="@string/pin_btn_cancel"
-            android:background="@drawable/btn_tv_focus"
-            android:textColor="@color/text_muted"
-            android:textSize="11sp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:focusable="true" />
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnPinCancel"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="@string/pin_btn_cancel"
+                android:background="@drawable/btn_tv_focus"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:layout_marginEnd="8dp"
+                android:focusable="true" />
+
+            <!-- Diagnostic server address (needed before the first unlock on a new TV) -->
+            <Button
+                android:id="@+id/btnPinServer"
+                android:layout_width="wrap_content"
+                android:layout_height="36dp"
+                android:text="⚙ Server"
+                android:background="@drawable/btn_tv_focus"
+                android:textColor="@color/text_muted"
+                android:textSize="11sp"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:focusable="true" />
+        </LinearLayout>
     </LinearLayout>
 
     <!-- Right Column: On-screen TV Numeric Keypad (D-pad navigable) -->

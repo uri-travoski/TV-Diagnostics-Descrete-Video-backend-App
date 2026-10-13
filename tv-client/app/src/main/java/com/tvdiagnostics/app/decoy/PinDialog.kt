@@ -11,13 +11,14 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
 import com.tvdiagnostics.app.data.ApiClient
+import com.tvdiagnostics.app.security.Session
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 class PinDialog(
     context: Context,
-    private val onSuccess: () -> Unit
+    private val onSuccess: (Session) -> Unit
 ) : Dialog(context) {
 
     private val pinBuilder = StringBuilder()
@@ -48,10 +49,14 @@ class PinDialog(
             }
         }
 
+        findViewById<Button?>(R.id.btnPinServer)?.setOnClickListener {
+            if (!isVerifying) SettingsDialog(context).show()
+        }
+
         setupKeypad()
 
         // Give initial D-pad focus to key 1
-        findViewById<Button?>(R.id.btnKey1)?.requestFocus()
+        findViewById<Button?>(R.id.btnKey1)?.let { key1 -> key1.post { key1.requestFocus() } }
     }
 
     private fun setupKeypad() {
@@ -124,9 +129,9 @@ class PinDialog(
 
     private fun submitPin() {
         if (isVerifying) return
-        if (pinBuilder.length < 4) {
+        if (pinBuilder.length < 6) {
             tvError.setTextColor(ContextCompat.getColor(context, R.color.danger_red))
-            tvError.text = "Enter 4 to 6 digits"
+            tvError.text = "Enter all 6 digits"
             tvError.visibility = View.VISIBLE
             return
         }
@@ -139,15 +144,19 @@ class PinDialog(
 
         val pin = pinBuilder.toString()
         CoroutineScope(Dispatchers.Main).launch {
-            val isValid = ApiClient.verifyPin(pin)
+            val result = ApiClient.verifyPin(pin)
             isVerifying = false
             setKeypadEnabled(true)
-            if (isValid) {
+            if (result is ApiClient.PinResult.Success) {
                 dismiss()
-                onSuccess()
+                onSuccess(result.session)
             } else {
                 tvError.setTextColor(ContextCompat.getColor(context, R.color.danger_red))
-                tvError.text = context.getString(R.string.pin_invalid)
+                tvError.text = if (result is ApiClient.PinResult.Offline) {
+                    "Diagnostic server unreachable"
+                } else {
+                    context.getString(R.string.pin_invalid)
+                }
                 tvError.visibility = View.VISIBLE
                 pinBuilder.clear()
                 updateDisplay()

@@ -45,6 +45,12 @@ data class VideoItem(
         return formatTime(watchedSeconds)
     }
 
+    /** Storyboard frames available for the grid preview (one every 7 seconds). */
+    fun getPreviewFrameCount(): Int {
+        if (duration <= 0.0) return 0
+        return ((duration - 0.5) / 7.0).toInt().coerceAtLeast(0)
+    }
+
     fun getProgressPercentage(): Int {
         if (duration <= 0.0) return 0
         return ((watchedSeconds / duration) * 100).toInt().coerceIn(0, 100)
@@ -84,7 +90,23 @@ data class PinVerifyRequest(
 )
 
 data class PinVerifyResponse(
-    val valid: Boolean
+    val valid: Boolean,
+    @SerializedName("user_id") val userId: Int? = null,
+    @SerializedName("user_name") val userName: String? = null,
+    val token: String? = null
+)
+
+data class ChangePinRequest(
+    @SerializedName("new_pin") val newPin: String
+)
+
+data class ChangePinResponse(
+    val success: Boolean = false,
+    val token: String? = null
+)
+
+data class ErrorResponse(
+    val detail: String? = null
 )
 
 data class ProgressUpdateRequest(

@@ -20,4 +20,22 @@
         <item name="android:textStyle">bold</item>
         <item name="android:focusable">true</item>
     </style>
+
+    <!-- Library filter bar pill -->
+    <style name="ChipStyle">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">34dp</item>
+        <item name="android:minWidth">0dp</item>
+        <item name="android:minHeight">0dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
+        <item name="android:background">@drawable/bg_chip</item>
+        <item name="android:textColor">@color/chip_text</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:stateListAnimator">@null</item>
+        <item name="android:focusable">true</item>
+        <item name="android:nextFocusDown">@+id/rvVideoGrid</item>
+    </style>
 </resources>

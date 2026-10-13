@@ -42,20 +42,25 @@ services:
     ports:
       - "8090:8090"
     environment:
-      - PIN_CODE=123456            # Secret 6-digit numeric PIN for TV Vault unlock
+      # Two TV users: each unlocks with their own 6-digit code and only sees their own folders.
+      # Default codes: user 1 = 002007, user 2 = 482061 (changeable on the TV, reset from /admin).
+      - USER1_DIRS=/videos/user1   # Comma-separated folders for user 1
+      - USER2_DIRS=/videos/user2   # Comma-separated folders for user 2
       - NOTES_PIN=1234             # Secret 4-digit numeric PIN for TV Notes toggle unlock
       - PORT=8090
       - SCAN_ON_STARTUP=true
       - SCAN_INTERVAL_MINUTES=30
       - MOUNT_POLL_INTERVAL_SECONDS=5 # Polling interval while waiting for SMB mount
-      - VIDEO_DIRS=/videos
     volumes:
-      # Mount your host/SMB video folder here (read-only recommended)
-      - /mnt/storage/my_videos:/videos:ro
+      # Mount each user's host/SMB video folder (read-only recommended)
+      - /mnt/storage/user1_videos:/videos/user1:ro
+      - /mnt/storage/user2_videos:/videos/user2:ro
       
       # Persistent database, rolling backups, and generated 60s thumbnails
       - ./data:/app/data
 ```
+
+> Upgrading from v1.0.x with a single `VIDEO_DIRS`: if `USER1_DIRS` / `USER2_DIRS` are not set, the existing `VIDEO_DIRS` library belongs to user 2 (code `482061`, the old vault PIN) and user 1 has no folders until `USER1_DIRS` is set. `PIN_CODE` is no longer used.
 
 ### 2. Start the Backend
 ```bash
@@ -128,7 +133,10 @@ When opened on the TV, the app appears as **"TV Diagnostics"** with a generic ci
 
 ### 2. Unlocking the Vault (6-Digit PIN)
 To access the private media collection:
-- **Method 1**: Click the **"Server Diagnostic Code"** button on the main menu, and enter your **6-digit numeric PIN** (default: `123456`) using the D-pad keypad or remote numeric keys (0–9).
+- **Method 1**: Click the **"Server Diagnostic Code"** button on the main menu, and enter your **6-digit code** using the D-pad keypad or remote numeric keys (0–9). The code decides whose library opens: user 1 (default `002007`) or user 2 (default `482061`).
+- **Changing your code**: in the vault, **⚙ → Change My Code**. A forgotten code is reset to its default with **Reset code** on the backend `/admin` page (never from the TV).
+- **First setup on a new TV**: the code prompt has a **⚙ Server** button to enter the backend address before the first unlock.
+- **Leaving the app locks it**: pressing HOME, switching apps or the screen turning off closes the library and player; coming back always asks for the code, never shows the last video.
 - **Method 2**: On any diagnostics screen, input the remote sequence:
   `[UP] -> [UP] -> [DOWN] -> [DOWN] -> [LEFT] -> [RIGHT]`.
 
@@ -139,7 +147,8 @@ To access the private media collection:
 - **Disabling Notes**: Clicking "Disable Notes" immediately hides notes again without requiring a PIN.
 
 ### 4. Vault Media Browser
-- **Leanback Grid**: Fully optimized for TV remote D-pads with high-visibility glowing focus indicators.
+- **16:9 Tile Grid**: Five columns of thumbnail tiles with the title on the image; the focused tile lifts and gets a white outline.
+- **Storyboard Preview**: Highlighting a tile flips through pictures taken every 7 seconds of the video, so you can see what it is about without opening it.
 - **Symbol-Only Ratings**: Filters and video cards display strictly circle symbols (`○`, `●`, `●●`) with no descriptive text.
 - **Remote Search Bar**: D-pad focusable search input to filter videos by title, filename, tags, or notes.
 - **Horizontal Tag Chips**: Horizontally scrolling tag bar allowing 1-click filtering by any backend tag.
@@ -147,15 +156,21 @@ To access the private media collection:
 
 ### 5. Direct Play Video Player (Media3 ExoPlayer)
 - **High-Performance Direct Play**: Uses native TV hardware decoders (`MediaCodec`) via HTTP 206 byte ranges for instant seeking with zero buffering lag.
+- **Nothing over the picture**: no buttons, no title bar, no dimming scrim. The screen never dims while playing or paused.
 - **TV Remote Navigation**:
-  - `[OK / DPAD CENTER]`: Play / Pause toggle.
-  - `[LEFT / RIGHT]`: Fast seek backward/forward 10 seconds.
-  - `[UP / DOWN]`: Toggle player control overlay and timeline.
+  - `[OK / DPAD CENTER]`: Play / Pause. Shows a small, see-through play/pause icon, elapsed / total time and a thin white progress line at the bottom (hidden again while playing, kept while paused).
+  - `[LEFT / RIGHT]`: Seek 10 seconds back / forward, silently.
+  - `[UP]`: Transparent playback speed menu in the bottom-right corner (0.5× – 2×; UP/DOWN to choose, OK to apply).
+  - `[DOWN]`: Peek at the time / progress without pausing.
 - **Auto-Sync Heartbeat**: Syncs watch progress to the backend every 10 seconds and saves exact timestamp on exit.
 - **PANIC SHIELD**: 
   - **Double-press `[BACK]`** or press **`[MENU]`** at any point during playback.
   - Playback terminates instantly, audio focus is dropped, task backstack is wiped, and the TV screen immediately reverts to a blank black display panel test.
-  - Android `FLAG_SECURE` is active throughout, ensuring no video frame thumbnails ever appear in the Android TV "Recent Apps" switcher.
+  - Android `FLAG_SECURE` is active throughout (release builds), ensuring no video frame thumbnails ever appear in the Android TV "Recent Apps" switcher.
+
+### 6. App Updates
+- **⚙ → Check for Update** compares the installed version with the latest [GitHub Release](https://github.com/uri-travoski/TV-Diagnostics-Descrete-Video-backend-App/releases/latest), then downloads and installs it (Android asks once to allow installs from TV Diagnostics).
+- Releases must be signed with the key in `tv-client/keystore/` (not in git) or they can't install over the existing app.
 
 ---
 

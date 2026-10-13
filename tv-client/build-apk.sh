@@ -20,8 +20,8 @@ if command -v docker &> /dev/null; then
     echo "=========================================="
 else
     echo "[Build] Running local Gradle build..."
-    ./gradlew assembleDebug --no-daemon
-    cp app/build/outputs/apk/debug/*.apk dist/tv-diagnostics.apk
+    ./gradlew assembleRelease --no-daemon
+    cp app/build/outputs/apk/release/app-release.apk dist/tv-diagnostics.apk
     echo "=========================================="
     echo " Build Complete!"
     echo " APK output: $DIR/dist/tv-diagnostics.apk"

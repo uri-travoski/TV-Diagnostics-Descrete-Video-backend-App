@@ -15,7 +15,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.tvdiagnostics.app.R
-import com.tvdiagnostics.app.TVDiagnosticsApp
+import com.tvdiagnostics.app.security.VaultLock
 import com.tvdiagnostics.app.vault.VaultActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,6 +54,7 @@ class DecoyActivity : AppCompatActivity() {
         setupListeners()
 
         if (intent.getBooleanExtra(EXTRA_AUTO_PROMPT_PIN, false)) {
+            VaultLock.promptOnReturn = false
             showPinDialog()
         } else {
             findViewById<Button>(R.id.btnScreenTest)?.requestFocus()
@@ -156,13 +157,31 @@ class DecoyActivity : AppCompatActivity() {
         }
     }
 
+    private var pinDialog: PinDialog? = null
+
     private fun showPinDialog() {
-        val dialog = PinDialog(this) {
-            TVDiagnosticsApp.instance.preferences.isVaultUnlocked = true
+        pinDialog?.dismiss()
+        val dialog = PinDialog(this) { session ->
+            VaultLock.unlock(session)
             val intent = Intent(this, VaultActivity::class.java)
             startActivity(intent)
         }
+        pinDialog = dialog
         dialog.show()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Returning after the vault locked in the background (HOME, app switch): ask for the code
+        if (VaultLock.promptOnReturn) {
+            VaultLock.promptOnReturn = false
+            showPinDialog()
+        }
+    }
+
+    override fun onDestroy() {
+        pinDialog?.dismiss()
+        super.onDestroy()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
@@ -184,6 +203,7 @@ class DecoyActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         if (intent?.getBooleanExtra(EXTRA_AUTO_PROMPT_PIN, false) == true) {
+            VaultLock.promptOnReturn = false
             showPinDialog()
         }
     }

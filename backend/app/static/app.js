@@ -15,6 +15,7 @@ let mountPollTimer = null;
 document.addEventListener("DOMContentLoaded", () => {
     loadVideos();
     loadTags();
+    loadUsers();
     checkMountStatus();
     // Periodic status heartbeat
     setInterval(checkMountStatus, 10000);
@@ -726,4 +727,43 @@ function closeModal(e) {
     video.src = "";
     currentPlayingVideoId = null;
     modal.classList.add("hidden");
+}
+
+// --- TV Users (per-user codes and folders) ---
+
+let userNames = {};
+
+async function loadUsers() {
+    const panel = document.getElementById("usersPanel");
+    if (!panel) return;
+    try {
+        const res = await fetch("/api/v1/users");
+        const users = await res.json();
+        userNames = Object.fromEntries(users.map(u => [u.id, u.name]));
+        panel.innerHTML = users.map(u => `
+            <div class="user-card">
+                <div class="user-info">
+                    <strong>${escapeHtml(u.name)}</strong>
+                    <span class="user-meta">${u.video_count} videos · ${u.pin_is_default ? "default code" : "code changed on TV"}</span>
+                    <span class="user-dirs">${u.dirs.length ? u.dirs.map(escapeHtml).join(", ") : "No folders configured (set USER" + u.id + "_DIRS)"}</span>
+                </div>
+                <button class="btn btn-secondary" onclick="resetUserPin(${u.id})"
+                    ${u.pin_is_default ? "disabled" : ""} title="Restore this user's default 6-digit code">Reset code</button>
+            </div>`).join("");
+    } catch (err) {
+        console.error("Failed to load users:", err);
+    }
+}
+
+async function resetUserPin(userId) {
+    const name = userNames[userId] || `User ${userId}`;
+    if (!confirm(`Reset ${name}'s code to the default? Their TVs will ask for the code again.`)) return;
+    try {
+        const res = await fetch(`/api/v1/users/${userId}/reset-pin`, { method: "POST" });
+        if (!res.ok) throw new Error(await res.text());
+        showAlert(`${name}'s code was reset to the default`, "success");
+        loadUsers();
+    } catch (err) {
+        showAlert("Failed to reset code: " + err.message, "error");
+    }
 }

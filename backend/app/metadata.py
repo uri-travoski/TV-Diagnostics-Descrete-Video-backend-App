@@ -141,3 +141,41 @@ def generate_thumbnail(filepath: str, duration: float) -> str:
         print(f"Error generating thumbnail for {filepath}: {e}")
         
     return ""
+
+def generate_preview_frame(filepath: str, duration: float, index: int) -> str:
+    """
+    Storyboard frame `index` for the TV grid preview: the picture at (index + 1) * PREVIEW_INTERVAL_SECONDS.
+    Generated on first request and cached under data/previews/<path hash>/<index>.jpg.
+    Returns the path, or empty string if the frame is past the end or ffmpeg failed.
+    """
+    from .config import PREVIEWS_DIR, PREVIEW_INTERVAL_SECONDS
+
+    path_obj = Path(filepath)
+    seek = (index + 1) * PREVIEW_INTERVAL_SECONDS
+    if index < 0 or (duration > 0 and seek >= duration) or not path_obj.exists():
+        return ""
+
+    hash_digest = hashlib.md5(str(path_obj.resolve()).encode("utf-8")).hexdigest()
+    frame_dir = PREVIEWS_DIR / hash_digest
+    frame_path = frame_dir / f"{index}.jpg"
+    if frame_path.exists() and frame_path.stat().st_size > 0:
+        return str(frame_path)
+
+    frame_dir.mkdir(parents=True, exist_ok=True)
+    cmd = [
+        "ffmpeg",
+        "-ss", str(seek),
+        "-i", str(path_obj.resolve()),
+        "-vframes", "1",
+        "-q:v", "4",
+        "-vf", "scale='min(480,iw)':-2",
+        "-y",
+        str(frame_path)
+    ]
+    try:
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=20)
+        if res.returncode == 0 and frame_path.exists() and frame_path.stat().st_size > 0:
+            return str(frame_path)
+    except Exception as e:
+        print(f"Error generating preview frame {index} for {filepath}: {e}")
+    return ""

@@ -7,7 +7,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", str(BASE_DIR / "data")))
 DB_DIR = DATA_DIR / "db"
 THUMBNAILS_DIR = DATA_DIR / "thumbnails"
 
-APP_VERSION = "1.0.3"
+APP_VERSION = "1.1.0"
 
 # Ensure directories exist
 DB_DIR.mkdir(parents=True, exist_ok=True)
@@ -23,7 +23,6 @@ HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8090"))
 
 # Security
-PIN_CODE = os.getenv("PIN_CODE", "482061")  # Default PIN for TV Vault unlock
 NOTES_PIN = os.getenv("NOTES_PIN", "1234")  # 4-digit PIN for TV Notes visibility unlock
 AUTH_TOKEN = os.getenv("AUTH_TOKEN", "tv-diag-secret-token")
 
@@ -33,8 +32,36 @@ default_video_dir = str(BASE_DIR / "sample_videos")
 if os.path.exists("/videos"):
     default_video_dir = "/videos"
 
-VIDEO_DIRS_RAW = os.getenv("VIDEO_DIRS", default_video_dir)
-VIDEO_DIRS = [Path(p.strip()) for p in VIDEO_DIRS_RAW.split(",") if p.strip()]
+def _parse_dirs(raw: str) -> list:
+    return [Path(p.strip()) for p in raw.split(",") if p.strip()]
+
+# Two TV users, each unlocking with their own 6-digit PIN and seeing only their own folders.
+# The defaults below are what the admin console's "Reset code" button restores.
+# Backwards compatible: when USER1_DIRS / USER2_DIRS are not set, the legacy VIDEO_DIRS
+# library belongs to user 2 (whose default PIN 482061 was the old single vault PIN).
+USERS = {
+    1: {
+        "name": os.getenv("USER1_NAME", "User 1"),
+        "default_pin": os.getenv("USER1_DEFAULT_PIN", "002007"),
+        "dirs": _parse_dirs(os.getenv("USER1_DIRS", "")),
+    },
+    2: {
+        "name": os.getenv("USER2_NAME", "User 2"),
+        "default_pin": os.getenv("USER2_DEFAULT_PIN", "482061"),
+        "dirs": _parse_dirs(os.getenv("USER2_DIRS", os.getenv("VIDEO_DIRS", default_video_dir))),
+    },
+}
+
+# Every folder that gets scanned: the union of all users' folders plus any extra VIDEO_DIRS.
+VIDEO_DIRS = []
+for _p in [d for u in USERS.values() for d in u["dirs"]] + _parse_dirs(os.getenv("VIDEO_DIRS", "")):
+    if _p not in VIDEO_DIRS:
+        VIDEO_DIRS.append(_p)
+
+# Storyboard previews on the TV thumbnail grid: one frame every PREVIEW_INTERVAL_SECONDS
+PREVIEW_INTERVAL_SECONDS = 7
+PREVIEWS_DIR = DATA_DIR / "previews"
+PREVIEWS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Supported Video Extensions
 SUPPORTED_EXTENSIONS = {

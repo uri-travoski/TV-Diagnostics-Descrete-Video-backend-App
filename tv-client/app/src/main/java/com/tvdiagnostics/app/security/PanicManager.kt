@@ -1,10 +1,7 @@
 package com.tvdiagnostics.app.security
 
 import android.app.Activity
-import android.content.Intent
 import android.view.KeyEvent
-import com.tvdiagnostics.app.TVDiagnosticsApp
-import com.tvdiagnostics.app.decoy.DecoyActivity
 
 object PanicManager {
     private var lastBackPressTime: Long = 0
@@ -36,15 +33,7 @@ object PanicManager {
     }
 
     fun triggerPanic(activity: Activity) {
-        // 1. Lock vault
-        TVDiagnosticsApp.instance.preferences.lockVault()
-
-        // 2. Clear entire task backstack and instantly present Decoy PIN / Lock Screen
-        val intent = Intent(activity, DecoyActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            putExtra(DecoyActivity.EXTRA_AUTO_PROMPT_PIN, true)
-        }
-        activity.startActivity(intent)
-        activity.finish()
+        // Lock vault, clear the back stack and present the Decoy code prompt
+        VaultLock.lockAndPrompt(activity)
     }
 }
