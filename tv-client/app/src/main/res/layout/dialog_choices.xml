@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Single-choice list (sort order, folder): title + scrollable column of options -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="460dp"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/card_dark"
+    android:padding="20dp">
+
+    <TextView
+        android:id="@+id/tvChoiceTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/text_white"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="12dp" />
+
+    <ScrollView
+        android:id="@+id/svChoices"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:focusable="false"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:id="@+id/choiceContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
+</LinearLayout>

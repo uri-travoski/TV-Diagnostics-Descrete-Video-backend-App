@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
+import com.tvdiagnostics.app.security.VaultLock
 import com.tvdiagnostics.app.data.TagItem
 
 class TagFilterDialog(
@@ -37,6 +38,7 @@ class TagFilterDialog(
         requestWindowFeature(Window.FEATURE_NO_TITLE)
         setContentView(R.layout.dialog_tags)
         window?.setBackgroundDrawableResource(android.R.color.transparent)
+        VaultLock.trackInput(window)
         // Prevent virtual keyboard from popping up automatically on TV
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 

@@ -14,6 +14,8 @@ services:
       # Without USER1_DIRS / USER2_DIRS, VIDEO_DIRS is user 2's library (the old single vault).
       # - USER1_DIRS=/videos/user1
       # - USER2_DIRS=/videos/user2
+      - ADMIN_USER=admin           # Login for the /admin console
+      - ADMIN_PASSWORD=change-me   # Required: without it the console stays locked
       - NOTES_PIN=1234             # 4-digit numeric PIN used to unlock Notes on TV app
       - PORT=8090
       - SCAN_ON_STARTUP=true
@@ -24,7 +26,7 @@ services:
       # Mount your host video folders here (replace ./videos with your external SMB or local folder)
       - ./videos:/videos:ro
       
-      # Persistent storage for metadata database, rolling backups, and generated 60s thumbnails
+      # Persistent storage for metadata database, rolling backups, and generated 60s thumbnails and preview frames
       - ./data:/app/data
 
     # Optional: uncomment below if building locally from source

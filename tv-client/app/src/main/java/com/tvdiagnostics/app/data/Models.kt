@@ -21,7 +21,12 @@ data class VideoItem(
     val tags: String = "",
     @SerializedName("watched_seconds") var watchedSeconds: Double = 0.0,
     var completed: Int = 0,
-    @SerializedName("last_watched_at") val lastWatchedAt: String? = null
+    @SerializedName("last_watched_at") val lastWatchedAt: String? = null,
+    @SerializedName("created_at") val createdAt: String = "",
+    /** Library folder + subfolders, e.g. "both/holiday" */
+    val folder: String = "",
+    /** Times this user started the video */
+    @SerializedName("play_count") val playCount: Int = 0
 ) : Serializable {
 
     fun getCircleRatingSymbol(): String {
@@ -86,14 +91,16 @@ data class TagItem(
 ) : Serializable
 
 data class PinVerifyRequest(
-    val pin: String
+    val pin: String,
+    val device: String? = null
 )
 
 data class PinVerifyResponse(
     val valid: Boolean,
     @SerializedName("user_id") val userId: Int? = null,
     @SerializedName("user_name") val userName: String? = null,
-    val token: String? = null
+    val token: String? = null,
+    @SerializedName("session_id") val sessionId: String? = null
 )
 
 data class ChangePinRequest(
@@ -122,6 +129,14 @@ data class ResetProgressResponse(
 
 data class ServerStatus(
     val status: String,
-    @SerializedName("video_count") val videoCount: Int = 0,
-    @SerializedName("is_scanning") val isScanning: Boolean = false
+    val version: String? = null
+)
+
+data class ActivityEvent(
+    @SerializedName("session_id") val sessionId: String,
+    val event: String,
+    @SerializedName("video_id") val videoId: Int? = null,
+    val position: Double? = null,
+    @SerializedName("watched_seconds") val watchedSeconds: Double? = null,
+    val detail: String = ""
 )

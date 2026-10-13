@@ -12,6 +12,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
@@ -22,6 +23,7 @@ import com.tvdiagnostics.app.data.ApiClient
 import com.tvdiagnostics.app.data.TagItem
 import com.tvdiagnostics.app.data.VideoItem
 import com.tvdiagnostics.app.decoy.SettingsDialog
+import com.tvdiagnostics.app.security.LockReason
 import com.tvdiagnostics.app.security.PanicManager
 import com.tvdiagnostics.app.security.VaultLock
 import kotlinx.coroutines.CoroutineScope
@@ -36,6 +38,7 @@ class VaultActivity : AppCompatActivity() {
     private lateinit var btnVaultTags: Button
     private lateinit var btnClearTagFilter: Button
     private lateinit var btnVaultSort: Button
+    private lateinit var btnVaultFolders: Button
 
     private var allVideos = listOf<VideoItem>()
     private var allTags = listOf<TagItem>()
@@ -45,7 +48,8 @@ class VaultActivity : AppCompatActivity() {
     private var isContinueFilter: Boolean = false
     private var selectedTag: String? = null
     private var searchQuery: String = ""
-    private var currentSort: SortOption = SortOption.RECENT_DESC
+    private var selectedFolder: String? = null
+    private var currentSort: SortOption = SortOption.fromName(TVDiagnosticsApp.instance.preferences.librarySort)
 
     private var didInitialFocus = false
     private lateinit var tvVaultCount: TextView
@@ -65,6 +69,13 @@ class VaultActivity : AppCompatActivity() {
         // Prevent virtual keyboard from popping up automatically on TV
         window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
 
+        // Leaving the library for the start screen locks the vault (the code is needed to come back)
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                VaultLock.lock(LockReason.BACK)
+            }
+        })
+
         initViews()
         setupFilters()
         setupSearch()
@@ -77,6 +88,11 @@ class VaultActivity : AppCompatActivity() {
         if (VaultLock.redirectIfLocked(this)) return
         // Refresh video list & progress when returning from player or settings
         loadVideos()
+    }
+
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        VaultLock.touch()
     }
 
     private fun initViews() {
@@ -118,13 +134,17 @@ class VaultActivity : AppCompatActivity() {
         btnVaultSort = findViewById(R.id.btnVaultSort)
         btnVaultSort.text = "⇅ ${currentSort.displayName}"
         btnVaultSort.setOnClickListener {
-            val sortDialog = SortDialog(this, currentSort) { selectedSort ->
+            val choices = SortOption.values().map { Choice(it, it.displayName) }
+            ChoiceDialog(this, "⇅ Sort by", choices, currentSort) { selectedSort ->
                 currentSort = selectedSort
+                TVDiagnosticsApp.instance.preferences.librarySort = selectedSort.name
                 btnVaultSort.text = "⇅ ${selectedSort.displayName}"
                 applyFilters()
-            }
-            sortDialog.show()
+            }.show()
         }
+
+        btnVaultFolders = findViewById(R.id.btnVaultFolders)
+        btnVaultFolders.setOnClickListener { showFolderPicker() }
 
         findViewById<Button>(R.id.btnVaultSettings).setOnClickListener {
             val settingsDialog = SettingsDialog(this) {
@@ -215,6 +235,34 @@ class VaultActivity : AppCompatActivity() {
         }
     }
 
+    /** Every folder holding videos (and its parents), indented under its parent, with video counts. */
+    private fun showFolderPicker() {
+        val paths = sortedSetOf<String>(String.CASE_INSENSITIVE_ORDER)
+        for (v in allVideos) {
+            val parts = v.folder.split('/').filter { it.isNotEmpty() }
+            for (i in 1..parts.size) paths.add(parts.take(i).joinToString("/"))
+        }
+        fun count(path: String) = allVideos.count { it.folder == path || it.folder.startsWith("$path/") }
+        val choices = listOf(Choice<String?>(null, "All folders", trailing = "${allVideos.size}")) +
+            paths.map { path ->
+                Choice<String?>(path, path.substringAfterLast('/'), depth = path.count { it == '/' } + 1, trailing = "${count(path)}")
+            }
+        ChoiceDialog(this, "📁 Folders", choices, selectedFolder) { folder ->
+            selectedFolder = folder
+            updateFolderButtonUi()
+            applyFilters()
+        }.show()
+    }
+
+    private fun updateFolderButtonUi() {
+        val folder = selectedFolder
+        btnVaultFolders.text = if (folder == null) "📁 All folders" else "📁 ${folder.substringAfterLast('/')}"
+        btnVaultFolders.isSelected = folder != null
+        // One folder without subfolders: nothing to choose between
+        val distinct = allVideos.map { it.folder }.toSet()
+        btnVaultFolders.visibility = if (folder != null || distinct.size > 1) View.VISIBLE else View.GONE
+    }
+
     private fun loadTags() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
@@ -260,6 +308,11 @@ class VaultActivity : AppCompatActivity() {
                     adapter.focusFirstOnBind = true
                 }
                 allVideos = videos
+                // A folder emptied or removed since it was picked: back to all folders
+                if (selectedFolder?.let { f -> videos.none { it.folder == f || it.folder.startsWith("$f/") } } == true) {
+                    selectedFolder = null
+                }
+                updateFolderButtonUi()
                 applyFilters()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -276,6 +329,11 @@ class VaultActivity : AppCompatActivity() {
                 if (v.watchedSeconds <= 0 || v.completed != 0) return@filter false
             } else if (selectedRatingFilter != null && v.rating != selectedRatingFilter) {
                 return@filter false
+            }
+
+            // Folder filter (includes its subfolders)
+            selectedFolder?.let { f ->
+                if (v.folder != f && !v.folder.startsWith("$f/")) return@filter false
             }
 
             // Tag filter
@@ -300,23 +358,7 @@ class VaultActivity : AppCompatActivity() {
             true
         }
 
-        val sortedList = filtered.sortedWith { a, b ->
-            when (currentSort) {
-                SortOption.TITLE_ASC -> (a.title.ifBlank { a.filename }).compareTo(b.title.ifBlank { b.filename }, ignoreCase = true)
-                SortOption.TITLE_DESC -> (b.title.ifBlank { b.filename }).compareTo(a.title.ifBlank { a.filename }, ignoreCase = true)
-                SortOption.RATING_DESC -> b.rating.compareTo(a.rating)
-                SortOption.RATING_ASC -> a.rating.compareTo(b.rating)
-                SortOption.RECENT_DESC -> b.id.compareTo(a.id)
-                SortOption.RECENT_ASC -> a.id.compareTo(b.id)
-                SortOption.DURATION_DESC -> b.duration.compareTo(a.duration)
-                SortOption.DURATION_ASC -> a.duration.compareTo(b.duration)
-                SortOption.PROGRESS_DESC -> {
-                    val pctA = if (a.duration > 0) a.watchedSeconds / a.duration else 0.0
-                    val pctB = if (b.duration > 0) b.watchedSeconds / b.duration else 0.0
-                    pctB.compareTo(pctA)
-                }
-            }
-        }
+        val sortedList = filtered.sortedWith(currentSort.comparator)
 
         adapter.updateData(sortedList)
 
@@ -339,7 +381,7 @@ class VaultActivity : AppCompatActivity() {
     }
 
     private fun lockAndExit() {
-        VaultLock.lock()
+        VaultLock.lock(LockReason.MANUAL)
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {

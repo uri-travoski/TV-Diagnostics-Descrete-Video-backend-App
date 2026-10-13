@@ -142,24 +142,89 @@ def generate_thumbnail(filepath: str, duration: float) -> str:
         
     return ""
 
+def preview_dir(filepath: str) -> Path:
+    from .config import PREVIEWS_DIR
+    return PREVIEWS_DIR / hashlib.md5(str(Path(filepath).resolve()).encode("utf-8")).hexdigest()
+
+PREVIEWS_COMPLETE_MARKER = ".complete"
+
+def previews_complete(filepath: str) -> bool:
+    return (preview_dir(filepath) / PREVIEWS_COMPLETE_MARKER).exists()
+
+def generate_all_preview_frames(filepath: str, duration: float) -> bool:
+    """
+    Builds every storyboard frame of a video in one low-priority ffmpeg pass (keyframes only,
+    so it is light on CPU), for the background pre-generation after scans. Frames that already
+    exist (made on demand) are kept. Returns True when the set is complete.
+    """
+    import os
+    import shutil
+    import tempfile
+    from .config import PREVIEW_INTERVAL_SECONDS
+
+    path_obj = Path(filepath)
+    if not path_obj.exists() or duration <= PREVIEW_INTERVAL_SECONDS:
+        return False
+    frame_dir = preview_dir(filepath)
+    frame_dir.mkdir(parents=True, exist_ok=True)
+    expected = int((duration - 0.5) // PREVIEW_INTERVAL_SECONDS)
+
+    tmp = Path(tempfile.mkdtemp(prefix="pv_", dir=str(frame_dir.parent)))
+    try:
+        cmd = ["nice", "-n", "19"] if shutil.which("nice") else []
+        cmd += [
+            "ffmpeg", "-v", "error",
+            "-skip_frame", "nokey",
+            "-i", str(path_obj.resolve()),
+            "-an", "-sn",
+            "-vf", f"fps=1/{PREVIEW_INTERVAL_SECONDS},scale='min(480,iw)':-2",
+            "-q:v", "4",
+            "-start_number", "0",
+            "-y", str(tmp / "%d.jpg")
+        ]
+        # Generous timeout: the whole file is read once (about a minute per hour of HD video)
+        res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             timeout=max(300, int(duration)))
+        if res.returncode != 0:
+            print(f"[Previews] ffmpeg failed for {filepath}: {res.stderr.decode(errors='ignore')[-300:]}")
+            return False
+        # Output frame n is the picture at n * interval; storyboard index i is at (i + 1) * interval
+        for frame in tmp.glob("*.jpg"):
+            n = int(frame.stem)
+            target = frame_dir / f"{n - 1}.jpg"
+            if n >= 1 and n - 1 < expected and not target.exists() and frame.stat().st_size > 0:
+                os.replace(frame, target)
+        # The pass can stop short of the last frames near the end: seek for any that are missing
+        for index in range(expected):
+            if not (frame_dir / f"{index}.jpg").exists():
+                generate_preview_frame(filepath, duration, index)
+        (frame_dir / PREVIEWS_COMPLETE_MARKER).write_text(str(expected))
+        return True
+    except Exception as e:
+        print(f"[Previews] Could not build previews for {filepath}: {e}")
+        return False
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
 def generate_preview_frame(filepath: str, duration: float, index: int) -> str:
     """
     Storyboard frame `index` for the TV grid preview: the picture at (index + 1) * PREVIEW_INTERVAL_SECONDS.
     Generated on first request and cached under data/previews/<path hash>/<index>.jpg.
     Returns the path, or empty string if the frame is past the end or ffmpeg failed.
     """
-    from .config import PREVIEWS_DIR, PREVIEW_INTERVAL_SECONDS
+    from .config import PREVIEW_INTERVAL_SECONDS
 
     path_obj = Path(filepath)
     seek = (index + 1) * PREVIEW_INTERVAL_SECONDS
-    if index < 0 or (duration > 0 and seek >= duration) or not path_obj.exists():
+    if index < 0 or (duration > 0 and seek >= duration):
         return ""
 
-    hash_digest = hashlib.md5(str(path_obj.resolve()).encode("utf-8")).hexdigest()
-    frame_dir = PREVIEWS_DIR / hash_digest
+    frame_dir = preview_dir(filepath)
     frame_path = frame_dir / f"{index}.jpg"
     if frame_path.exists() and frame_path.stat().st_size > 0:
         return str(frame_path)
+    if not path_obj.exists():
+        return ""
 
     frame_dir.mkdir(parents=True, exist_ok=True)
     cmd = [

@@ -160,6 +160,27 @@ def init_db():
         (secrets.token_hex(32),)
     )
 
+    # Activity log: one row per TV event (unlock, play, pause, exit, lock...) or security event
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS activity (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts TEXT NOT NULL,
+            session_id TEXT NOT NULL DEFAULT '',
+            user_id INTEGER,
+            event TEXT NOT NULL,
+            video_id INTEGER,
+            video_title TEXT NOT NULL DEFAULT '',
+            position REAL,
+            watched REAL,
+            detail TEXT NOT NULL DEFAULT '',
+            ip TEXT NOT NULL DEFAULT '',
+            device TEXT NOT NULL DEFAULT ''
+        )
+    """)
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_ts ON activity(ts)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_session ON activity(session_id)")
+    cursor.execute("CREATE INDEX IF NOT EXISTS idx_activity_plays ON activity(event, user_id, video_id)")
+
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_filepath ON videos(filepath)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_rating ON videos(rating)")
     cursor.execute("CREATE INDEX IF NOT EXISTS idx_videos_tags ON videos(tags)")
@@ -188,6 +209,13 @@ def find_relocated_video(filename: str, filesize: int, duration: float) -> Optio
         if not os.path.exists(old_path):
             return dict(row)
     return None
+
+def get_indexed_files() -> Dict[str, Dict[str, Any]]:
+    """filepath -> {filesize, duration, thumbnail_path} for every indexed video (lets scans skip unchanged files)."""
+    conn = get_connection()
+    rows = conn.execute("SELECT filepath, filesize, duration, thumbnail_path FROM videos").fetchall()
+    conn.close()
+    return {row["filepath"]: dict(row) for row in rows}
 
 def upsert_video(video_info: Dict[str, Any]) -> int:
     conn = get_connection()
@@ -577,3 +605,63 @@ def set_user_pin(user_id: int, pin: str) -> bool:
     conn.commit()
     conn.close()
     return success
+
+
+# --- Activity log ---
+
+def log_activity(
+    event: str,
+    session_id: str = "",
+    user_id: Optional[int] = None,
+    video_id: Optional[int] = None,
+    position: Optional[float] = None,
+    detail: str = "",
+    ip: str = "",
+    device: str = "",
+    watched: Optional[float] = None
+) -> None:
+    title = ""
+    conn = get_connection()
+    if video_id is not None:
+        row = conn.execute("SELECT title FROM videos WHERE id = ?", (video_id,)).fetchone()
+        title = row["title"] if row else ""
+    conn.execute(
+        """INSERT INTO activity (ts, session_id, user_id, event, video_id, video_title, position, watched, detail, ip, device)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+        (datetime.utcnow().isoformat(timespec="seconds") + "Z", session_id, user_id, event, video_id,
+         title, position, watched, detail[:500], ip, device[:100])
+    )
+    conn.commit()
+    conn.close()
+
+def get_activity(since: str, user_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Activity rows newer than `since` (ISO time), oldest first."""
+    conn = get_connection()
+    query = "SELECT * FROM activity WHERE ts >= ?"
+    params: List[Any] = [since]
+    if user_id is not None:
+        query += " AND user_id = ?"
+        params.append(user_id)
+    rows = conn.execute(query + " ORDER BY id ASC", params).fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def prune_activity(older_than: str) -> int:
+    conn = get_connection()
+    cursor = conn.execute("DELETE FROM activity WHERE ts < ?", (older_than,))
+    count = cursor.rowcount
+    conn.commit()
+    conn.close()
+    return count
+
+def get_play_counts(user_id: Optional[int] = None) -> Dict[int, int]:
+    """video_id -> number of times it was started on a TV (by this user, or anyone)."""
+    conn = get_connection()
+    query = "SELECT video_id, COUNT(*) AS n FROM activity WHERE event = 'play' AND video_id IS NOT NULL"
+    params: List[Any] = []
+    if user_id is not None:
+        query += " AND user_id = ?"
+        params.append(user_id)
+    rows = conn.execute(query + " GROUP BY video_id", params).fetchall()
+    conn.close()
+    return {row["video_id"]: row["n"] for row in rows}

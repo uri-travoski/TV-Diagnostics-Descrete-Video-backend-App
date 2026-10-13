@@ -60,6 +60,18 @@
             android:focusable="true"
             android:layout_marginBottom="12dp" />
 
+        <!-- Shown when the start-up check finds a newer release on GitHub -->
+        <Button
+            android:id="@+id/btnAppUpdate"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Update available"
+            android:background="@drawable/btn_tv_focus"
+            android:textColor="@color/accent_green"
+            android:focusable="true"
+            android:visibility="gone"
+            android:layout_marginBottom="12dp" />
+
     </LinearLayout>
 
 

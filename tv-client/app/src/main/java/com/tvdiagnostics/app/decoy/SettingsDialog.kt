@@ -43,8 +43,6 @@ class SettingsDialog(
     private var isUpdating = false
     private lateinit var tvNotesStatus: TextView
     private lateinit var btnToggleNotes: Button
-    private lateinit var tvAutoLockStatus: TextView
-    private lateinit var btnToggleAutoLock: Button
     private lateinit var tvConnectionStatus: TextView
     private lateinit var btnTestConnection: Button
     private lateinit var tvAppVersion: TextView
@@ -57,6 +55,7 @@ class SettingsDialog(
         window?.setBackgroundDrawableResource(android.R.color.transparent)
         // Prevent virtual keyboard from popping up automatically on TV
         window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+        VaultLock.trackInput(window)
 
         etServerUrl = findViewById(R.id.etServerUrl)
         tvDeviceIpHint = findViewById(R.id.tvDeviceIpHint)
@@ -68,8 +67,6 @@ class SettingsDialog(
         btnCheckUpdate = findViewById(R.id.btnCheckUpdate)
         tvNotesStatus = findViewById(R.id.tvNotesStatus)
         btnToggleNotes = findViewById(R.id.btnToggleNotes)
-        tvAutoLockStatus = findViewById(R.id.tvAutoLockStatus)
-        btnToggleAutoLock = findViewById(R.id.btnToggleAutoLock)
         tvConnectionStatus = findViewById(R.id.tvConnectionStatus)
         btnTestConnection = findViewById(R.id.btnTestConnection)
         tvAppVersion = findViewById(R.id.tvAppVersion)
@@ -98,6 +95,12 @@ class SettingsDialog(
             findViewById<TextView>(R.id.tvMyCodeLabel).text = "Change My Code — ${session.userName} (6 Digits):"
         }
         tvUpdateStatus.text = "Installed: v$verName"
+        // Found by the check at app start: offer it straight away
+        AppUpdater.pendingUpdate?.takeIf { AppUpdater.isNewer(it.version, verName) }?.let { release ->
+            availableUpdate = release
+            tvUpdateStatus.text = "Installed: v$verName · v${release.version} available"
+            btnCheckUpdate.text = "Update to v${release.version}"
+        }
 
         btnChangePin.setOnClickListener { changePin() }
         btnCheckUpdate.setOnClickListener { checkOrInstallUpdate() }
@@ -111,7 +114,6 @@ class SettingsDialog(
         }
 
         updateNotesStatusUI()
-        updateAutoLockStatusUI()
 
         btnTestConnection.setOnClickListener {
             testServerConnection()
@@ -132,17 +134,10 @@ class SettingsDialog(
             }
         }
 
-        btnToggleAutoLock.setOnClickListener {
-            prefs.isAutoLockEnabled = !prefs.isAutoLockEnabled
-            updateAutoLockStatusUI()
-            val msg = if (prefs.isAutoLockEnabled) "Auto-lock enabled (15m pause / 5m end)" else "Auto-lock disabled"
-            Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
-        }
-
         val btnCancel = findViewById<Button>(R.id.btnSettingsCancel)
         val btnSave = findViewById<Button>(R.id.btnSettingsSave)
 
-        listOf(btnTestConnection, btnChangePin, btnCheckUpdate, btnToggleNotes, btnToggleAutoLock, btnCancel, btnSave).forEach { btn ->
+        listOf(btnTestConnection, btnChangePin, btnCheckUpdate, btnToggleNotes, btnCancel, btnSave).forEach { btn ->
             btn.setOnFocusChangeListener { v, hasFocus ->
                 v.animate()
                     .scaleX(if (hasFocus) 1.06f else 1.0f)
@@ -224,7 +219,7 @@ class SettingsDialog(
 
             btnTestConnection.isEnabled = true
             if (result != null && result.status == "online") {
-                tvConnectionStatus.text = "🟢 Connection Successful! Server online with ${result.videoCount} indexed videos."
+                tvConnectionStatus.text = "🟢 Connection Successful! Server online" + (result.version?.let { " (v$it)." } ?: ".")
                 tvConnectionStatus.setTextColor(ContextCompat.getColor(context, R.color.accent_green))
             } else {
                 tvConnectionStatus.text = "🔴 Cannot connect to $targetUrl. Verify server IP, port, and Wi-Fi."
@@ -304,32 +299,12 @@ class SettingsDialog(
     }
 
     private fun downloadAndInstall(release: AppUpdater.Release) {
-        if (!AppUpdater.canInstall(context)) {
-            tvUpdateStatus.text = "Allow \"Install unknown apps\" for TV Diagnostics, then press Update again"
-            if (!AppUpdater.openInstallPermissionSettings(context)) {
-                Toast.makeText(context, "Enable unknown app installs for TV Diagnostics in Android settings", Toast.LENGTH_LONG).show()
-            }
-            return
-        }
         isUpdating = true
         btnCheckUpdate.isEnabled = false
-        tvUpdateStatus.text = "Downloading v${release.version}..."
         CoroutineScope(Dispatchers.Main).launch {
-            val apk = AppUpdater.download(context, release) { pct ->
-                tvUpdateStatus.text = "Downloading v${release.version}... $pct%"
-            }
+            AppUpdater.downloadAndInstall(context, release) { status -> tvUpdateStatus.text = status }
             isUpdating = false
             btnCheckUpdate.isEnabled = true
-            if (apk == null) {
-                tvUpdateStatus.text = "Download failed. Check the internet connection and try again."
-                return@launch
-            }
-            tvUpdateStatus.text = "Installing v${release.version}..."
-            try {
-                AppUpdater.install(context, apk)
-            } catch (e: Exception) {
-                tvUpdateStatus.text = "Could not open the installer: ${e.message}"
-            }
         }
     }
 
@@ -341,17 +316,6 @@ class SettingsDialog(
         } else {
             tvNotesStatus.text = "Status: OFF (Hidden)"
             btnToggleNotes.text = "Enable Notes (PIN)"
-        }
-    }
-
-    private fun updateAutoLockStatusUI() {
-        val prefs = TVDiagnosticsApp.instance.preferences
-        if (prefs.isAutoLockEnabled) {
-            tvAutoLockStatus.text = "Status: Enabled (15m / 5m)"
-            btnToggleAutoLock.text = "Disable"
-        } else {
-            tvAutoLockStatus.text = "Status: Disabled"
-            btnToggleAutoLock.text = "Enable"
         }
     }
 }

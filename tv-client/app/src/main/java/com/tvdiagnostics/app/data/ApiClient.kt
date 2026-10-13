@@ -1,13 +1,17 @@
 package com.tvdiagnostics.app.data
 
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.tvdiagnostics.app.TVDiagnosticsApp
+import com.tvdiagnostics.app.security.LockReason
 import com.tvdiagnostics.app.security.Session
 import com.tvdiagnostics.app.security.VaultLock
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -15,10 +19,20 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import java.net.URLEncoder
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
 object ApiClient {
     private const val SESSION_HEADER = "X-Session-Token"
+    private const val ACTIVITY_HEADER = "X-Activity-Session"
+    private const val DEVICE_HEADER = "X-Device-Name"
+
+    /** Shown in the admin activity log, e.g. "Amlogic 905X3A". */
+    private val deviceName: String by lazy {
+        val maker = Build.MANUFACTURER.replaceFirstChar { it.uppercase() }
+        val model = Build.MODEL
+        (if (model.startsWith(maker, ignoreCase = true)) model else "$maker $model").take(80)
+    }
 
     private val client = OkHttpClient.Builder()
         .connectTimeout(8, TimeUnit.SECONDS)
@@ -58,8 +72,11 @@ object ApiClient {
 
     /** Request builder carrying the signed-in user's session. */
     private fun authed(url: String): Request.Builder {
-        val builder = Request.Builder().url(url)
-        VaultLock.session?.token?.let { builder.header(SESSION_HEADER, it) }
+        val builder = Request.Builder().url(url).header(DEVICE_HEADER, deviceName)
+        VaultLock.session?.let {
+            builder.header(SESSION_HEADER, it.token)
+            if (it.activityId.isNotEmpty()) builder.header(ACTIVITY_HEADER, it.activityId)
+        }
         return builder
     }
 
@@ -67,7 +84,7 @@ object ApiClient {
     private fun checkSession(response: Response) {
         if (response.code == 401 && VaultLock.isUnlocked) {
             Handler(Looper.getMainLooper()).post {
-                VaultLock.lock()
+                VaultLock.lock(LockReason.EXPIRED)
                 VaultLock.promptOnReturn = true
             }
         }
@@ -82,7 +99,7 @@ object ApiClient {
     /** Checks a 6-digit vault code; the backend says which user it belongs to. */
     suspend fun verifyPin(pin: String): PinResult = withContext(Dispatchers.IO) {
         try {
-            val json = gson.toJson(PinVerifyRequest(pin))
+            val json = gson.toJson(PinVerifyRequest(pin, deviceName))
             val req = Request.Builder()
                 .url("${getBaseUrl()}/api/v1/auth/verify")
                 .post(json.toRequestBody(JSON_MEDIA_TYPE))
@@ -93,7 +110,7 @@ object ApiClient {
                 val bodyStr = response.body?.string() ?: return@withContext PinResult.Offline
                 val parsed = gson.fromJson(bodyStr, PinVerifyResponse::class.java)
                 if (parsed.valid && parsed.token != null && parsed.userId != null) {
-                    PinResult.Success(Session(parsed.userId, parsed.userName ?: "", parsed.token))
+                    PinResult.Success(Session(parsed.userId, parsed.userName ?: "", parsed.token, parsed.sessionId ?: ""))
                 } else {
                     PinResult.Invalid
                 }
@@ -125,6 +142,39 @@ object ApiClient {
             }
         } catch (e: Exception) {
             "Server unreachable"
+        }
+    }
+
+    private val activityExecutor = Executors.newSingleThreadExecutor()
+
+    /**
+     * Fire-and-forget activity log entry (play, pause, exit, lock...). Takes the session explicitly
+     * because events like "lock" and "exit" are sent while the session is being cleared.
+     */
+    fun logActivity(
+        session: Session,
+        event: String,
+        videoId: Int? = null,
+        positionSec: Double? = null,
+        watchedSec: Double? = null,
+        detail: String = ""
+    ) {
+        if (session.activityId.isEmpty()) return
+        val payload = gson.toJson(ActivityEvent(session.activityId, event, videoId, positionSec, watchedSec, detail))
+        val baseUrl = getBaseUrl()
+        // One at a time, so the log keeps the order things happened in (exit before lock...)
+        activityExecutor.execute {
+            try {
+                val req = Request.Builder()
+                    .url("$baseUrl/api/v1/activity")
+                    .header(SESSION_HEADER, session.token)
+                    .header(DEVICE_HEADER, deviceName)
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                    .build()
+                client.newCall(req).execute().close()
+            } catch (e: Exception) {
+                // The log is best effort: playback never waits on it
+            }
         }
     }
 

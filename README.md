@@ -6,7 +6,7 @@ A discreet, privacy-first media streaming platform tailored for TVs running Andr
 
 The platform consists of:
 1. **Docker Compose Backend**: A lightweight, fast media server that indexes mounted host video folders, extracts metadata, generates preview thumbnails at **60 seconds**, supports **Direct Play HTTP Byte-Range streaming**, manages video notes, video **tags**, discreet circle ratings (`○`, `●`, `●●`), and tracks playback progress with backend reset capabilities. Features a responsive desktop admin console with **60% compact cards**, 2-line clamped notes previews with a modal editor, dynamic tag filtering, and instant automatic database backups on metadata edits with smart file relocation tracking.
-2. **Android TV Client APK**: An app camouflaged as **"TV Diagnostics"** featuring a functional display & network telemetry diagnostic suite, unlocked via a **6-digit numeric PIN**, complete with **Media3 ExoPlayer direct playback**, D-pad remote optimization, symbol-only circle ratings, remote search & tag filtering, a **4-digit PIN-protected Notes display toggle** (`NOTES_PIN`), and **Inactivity Auto-Lock** (15-min pause / 5-min ended timeout). Also includes an instant **Panic Shield** (`Double-tap BACK` or `MENU`).
+2. **Android TV Client APK**: An app camouflaged as **"TV Diagnostics"** featuring a functional display & network telemetry diagnostic suite, unlocked via a **6-digit numeric PIN**, complete with **Media3 ExoPlayer direct playback**, D-pad remote optimization, symbol-only circle ratings, remote search & tag filtering, a **4-digit PIN-protected Notes display toggle** (`NOTES_PIN`), and **Inactivity Auto-Lock** (15 minutes without a key press, unless a video is playing). Also includes an instant **Panic Shield** (`Double-tap BACK` or `MENU`).
 
 ---
 
@@ -44,21 +44,31 @@ services:
     environment:
       # Two TV users: each unlocks with their own 6-digit code and only sees their own folders.
       # Default codes: user 1 = 002007, user 2 = 482061 (changeable on the TV, reset from /admin).
+      - USER1_NAME=User 1
       - USER1_DIRS=/videos/user1   # Comma-separated folders for user 1
-      - USER2_DIRS=/videos/user2   # Comma-separated folders for user 2
+      - USER2_NAME=User 2
+      - USER2_DIRS=/videos/user2   # Comma-separated folders for user 2 (a folder may be in both)
+      - ADMIN_USER=admin           # Login for the /admin console
+      - ADMIN_PASSWORD=change-me   # Required: without it the console stays locked
       - NOTES_PIN=1234             # Secret 4-digit numeric PIN for TV Notes toggle unlock
       - PORT=8090
       - SCAN_ON_STARTUP=true
       - SCAN_INTERVAL_MINUTES=30
       - MOUNT_POLL_INTERVAL_SECONDS=5 # Polling interval while waiting for SMB mount
+      # Optional (defaults shown):
+      # - WATCH_FOLDERS=true             # Pick up added/removed videos within seconds
+      # - PREGENERATE_PREVIEWS=true      # Build all 7-second preview frames after each scan
+      # - ACTIVITY_RETENTION_DAYS=180    # How long the activity log keeps entries
     volumes:
       # Mount each user's host/SMB video folder (read-only recommended)
       - /mnt/storage/user1_videos:/videos/user1:ro
       - /mnt/storage/user2_videos:/videos/user2:ro
       
-      # Persistent database, rolling backups, and generated 60s thumbnails
+      # Persistent database, rolling backups, 60s thumbnails and preview frames
       - ./data:/app/data
 ```
+
+Only the users' folders are scanned; anything else on the mounted drive is ignored.
 
 > Upgrading from v1.0.x with a single `VIDEO_DIRS`: if `USER1_DIRS` / `USER2_DIRS` are not set, the existing `VIDEO_DIRS` library belongs to user 2 (code `482061`, the old vault PIN) and user 1 has no folders until `USER1_DIRS` is set. `PIN_CODE` is no longer used.
 
@@ -74,10 +84,14 @@ The backend server is now running on `http://<your-server-ip>:8090`.
 ## Part 2: Backend Features & Web Management Portal
 
 ### Discreet Root Landing Page (`http://<server-ip>:8090/`)
-Anyone attempting to browse to the server root URL sees a generic **TV Diagnostic Probe / Network Node** status screen. Entering the 6-digit PIN unlocks the admin console.
+Anyone attempting to browse to the server root URL sees a generic **TV Diagnostic Probe / Network Node** status screen, with an **Operator Console** link to the login page.
 
 ### Desktop Admin Console (`http://<server-ip>:8090/admin`)
-Accessing `/admin` provides a clean desktop interface:
+Sign in with `ADMIN_USER` / `ADMIN_PASSWORD` from the compose file (5 wrong passwords lock that address out, starting at 1 minute). Without the login, the API answers nothing but the TV code check: every list, stream and setting needs either the console login or a TV session. The console has two tabs:
+- **Library**: the video grid described below, plus the two TV users with a **Reset code** button each.
+- **Activity**: one card per TV session (code entry → lock), newest first, grouped by day: who, which TV, when, how long, videos played and time watched, and why it locked (Lock button, Back, Home, 15 min idle, panic, code changed). Open a card for the full timeline: play (from where), pause, resume, skips (from → to), speed changes, finished, closed (at what point, how long it played). Wrong TV codes and console sign-ins are listed below the sessions.
+
+Library tab:
 - **60% Compact Cards**: Space-efficient card grid optimized for desktop displays.
 - **60-Second Thumbnails**: View automatically generated snapshots captured at 60s into each video.
 - **Discreet Circle Ratings**: Symbol-only rating buttons cycling between:
@@ -91,7 +105,8 @@ Accessing `/admin` provides a clean desktop interface:
   - Click **"↺ Reset"** on any video to restore playback position back to `0:00`.
   - Click **"Reset All Progress"** to reset all videos in one click.
 - **Direct Preview**: Test playback directly in the browser via HTML5 video.
-- **Rescan Media**: Click **"↻ Rescan Media"** to scan newly added files.
+- **New videos appear by themselves**: the backend watches the users' folders and rescans a few seconds after files are added, renamed or removed (a periodic scan every `SCAN_INTERVAL_MINUTES` covers network shares that don't report changes). **"↻ Rescan Media"** still forces a scan. Rescans skip files that haven't changed.
+- **Preview frames are built ahead**: after each scan, the TV grid's 7-second preview frames are generated in the background, one video at a time at low priority (roughly 10 MB per hour of video in `data/previews`).
 
 ---
 
@@ -136,7 +151,8 @@ To access the private media collection:
 - **Method 1**: Click the **"Server Diagnostic Code"** button on the main menu, and enter your **6-digit code** using the D-pad keypad or remote numeric keys (0–9). The code decides whose library opens: user 1 (default `002007`) or user 2 (default `482061`).
 - **Changing your code**: in the vault, **⚙ → Change My Code**. A forgotten code is reset to its default with **Reset code** on the backend `/admin` page (never from the TV).
 - **First setup on a new TV**: the code prompt has a **⚙ Server** button to enter the backend address before the first unlock.
-- **Leaving the app locks it**: pressing HOME, switching apps or the screen turning off closes the library and player; coming back always asks for the code, never shows the last video.
+- **Leaving the app locks it**: pressing HOME, switching apps or the screen turning off closes the library and player; coming back always asks for the code, never shows the last video. BACK from the library also locks.
+- **Auto-lock**: 15 minutes without a key press locks the vault (a playing video counts as activity; paused, the 15 minutes run).
 - **Method 2**: On any diagnostics screen, input the remote sequence:
   `[UP] -> [UP] -> [DOWN] -> [DOWN] -> [LEFT] -> [RIGHT]`.
 
@@ -151,7 +167,9 @@ To access the private media collection:
 - **Storyboard Preview**: Highlighting a tile flips through pictures taken every 7 seconds of the video, so you can see what it is about without opening it.
 - **Symbol-Only Ratings**: Filters and video cards display strictly circle symbols (`○`, `●`, `●●`) with no descriptive text.
 - **Remote Search Bar**: D-pad focusable search input to filter videos by title, filename, tags, or notes.
-- **Horizontal Tag Chips**: Horizontally scrolling tag bar allowing 1-click filtering by any backend tag.
+- **📁 Folders**: pick one of your folders or subfolders (indented under their parent, with video counts); a folder includes its subfolders.
+- **⇅ Sort**: Newest, Name, Longest or Least watched (fewest plays by you first). The choice is remembered.
+- **Tags**: filter by any backend tag.
 - **Video Detail Modal**: Displays duration, resolution badge, tags, and (if unlocked) custom notes. Offers **"Resume from MM:SS"**, **"Play from Beginning"**, and **"Reset Playback"**.
 
 ### 5. Direct Play Video Player (Media3 ExoPlayer)
@@ -169,6 +187,7 @@ To access the private media collection:
   - Android `FLAG_SECURE` is active throughout (release builds), ensuring no video frame thumbnails ever appear in the Android TV "Recent Apps" switcher.
 
 ### 6. App Updates
+- On start, the app checks GitHub once; when a newer version exists, an **⬆ Update to vX** button appears on the start screen (one press downloads and installs it).
 - **⚙ → Check for Update** compares the installed version with the latest [GitHub Release](https://github.com/uri-travoski/TV-Diagnostics-Descrete-Video-backend-App/releases/latest), then downloads and installs it (Android asks once to allow installs from TV Diagnostics).
 - Releases must be signed with the key in `tv-client/keystore/` (not in git) or they can't install over the existing app.
 

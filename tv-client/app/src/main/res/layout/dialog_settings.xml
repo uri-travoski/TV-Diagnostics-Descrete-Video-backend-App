@@ -251,46 +251,6 @@
                     android:focusable="true" />
             </LinearLayout>
 
-            <!-- Inactivity Auto-Lock Toggle Section -->
-            <TextView
-                android:tag="vaultOnly"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Inactivity Auto-Lock (15m Pause / 5m Ended):"
-                android:textColor="@color/text_muted"
-                android:textSize="12sp"
-                android:layout_marginBottom="6dp" />
-
-            <LinearLayout
-                android:tag="vaultOnly"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="#0F172A"
-                android:padding="12dp"
-                android:layout_marginBottom="10dp">
-
-                <TextView
-                    android:id="@+id/tvAutoLockStatus"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Status: Enabled (Active)"
-                    android:textColor="@color/text_white"
-                    android:textSize="13sp" />
-
-                <Button
-                    android:id="@+id/btnToggleAutoLock"
-                    android:layout_width="wrap_content"
-                    android:layout_height="38dp"
-                    android:background="@drawable/btn_tv_focus"
-                    android:text="Disable"
-                    android:textColor="@color/accent_blue"
-                    android:textSize="12sp"
-                    android:focusable="true" />
-            </LinearLayout>
-
         </LinearLayout>
     </ScrollView>
 

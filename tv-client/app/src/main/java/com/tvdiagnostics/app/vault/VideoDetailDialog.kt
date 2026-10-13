@@ -11,6 +11,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
+import com.tvdiagnostics.app.security.VaultLock
 import com.tvdiagnostics.app.TVDiagnosticsApp
 import com.tvdiagnostics.app.data.ApiClient
 import com.tvdiagnostics.app.data.VideoItem
@@ -31,6 +32,7 @@ class VideoDetailDialog(
         setContentView(R.layout.dialog_video_detail)
 
         window?.setBackgroundDrawableResource(android.R.color.transparent)
+        VaultLock.trackInput(window)
 
         val tvTitle = findViewById<TextView>(R.id.tvDetailTitle)
         val tvRating = findViewById<TextView>(R.id.tvDetailRating)

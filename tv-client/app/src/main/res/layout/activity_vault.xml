@@ -119,6 +119,12 @@
             android:background="#1FFFFFFF" />
 
         <Button
+            android:id="@+id/btnVaultFolders"
+            style="@style/ChipStyle"
+            android:text="📁 All folders"
+            android:nextFocusUp="@+id/btnVaultSettings" />
+
+        <Button
             android:id="@+id/btnVaultTags"
             style="@style/ChipStyle"
             android:text="# Tags"

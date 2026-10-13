@@ -20,10 +20,10 @@ import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.tvdiagnostics.app.R
-import com.tvdiagnostics.app.TVDiagnosticsApp
 import com.tvdiagnostics.app.data.ApiClient
 import com.tvdiagnostics.app.data.VideoItem
 import com.tvdiagnostics.app.security.PanicManager
+import com.tvdiagnostics.app.security.Session
 import com.tvdiagnostics.app.security.VaultLock
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +41,7 @@ import kotlinx.coroutines.withContext
  * - UP: transparent speed menu in the bottom-right corner (UP/DOWN to pick, OK to apply).
  * - DOWN: peek at the overlay without pausing.
  * - BACK: hide the speed menu / overlay, else return to the library. Double BACK or MENU = panic.
+ * Play, pause, skips, speed changes and closing are sent to the admin activity log.
  */
 class PlayerActivity : AppCompatActivity() {
 
@@ -56,8 +57,16 @@ class PlayerActivity : AppCompatActivity() {
     private var videoItem: VideoItem? = null
     private var startPositionMs: Long = 0L
 
-    /** Captured at start: the vault session is cleared before the final progress sync on leave. */
-    private var sessionToken: String? = null
+    /** Captured at start: the vault session is cleared before the final progress sync and exit log on leave. */
+    private var playerSession: Session? = null
+    private val sessionToken: String? get() = playerSession?.token
+
+    // Activity log: wall-clock time actually spent playing, and the start of a run of skips
+    private var watchedMs = 0L
+    private var playingSince = 0L
+    private var seekChainFrom = -1L
+    private var exitLogged = false
+    private val logSeekRunnable = Runnable { logSeekChain() }
 
     private var currentSpeedIndex = SPEEDS.indexOf(1.0f)
     private var speedMenuIndex = currentSpeedIndex
@@ -80,14 +89,11 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    private val autoLockHandler = Handler(Looper.getMainLooper())
-    private val autoLockRunnable = Runnable { triggerAutoLock() }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (VaultLock.redirectIfLocked(this)) return
         VaultLock.registerVaultActivity(this)
-        sessionToken = VaultLock.session?.token
+        playerSession = VaultLock.session
 
         // Security: Prevent OS recents snapshot. Keep the screen fully bright while playing or paused.
         VaultLock.secureWindow(this)
@@ -132,19 +138,31 @@ class PlayerActivity : AppCompatActivity() {
 
         exoPlayer?.prepare()
         exoPlayer?.playWhenReady = true
+        logEvent("play", startPositionMs)
 
         exoPlayer?.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
                 if (state == Player.STATE_ENDED) {
                     syncProgress(completed = true)
+                    logEvent("ended", exoPlayer?.currentPosition ?: 0L)
                     showOverlay()
                 }
-                scheduleOrCancelAutoLockTimer()
             }
 
             override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
                 if (bottomOverlay.visibility == View.VISIBLE) updateOverlay()
-                scheduleOrCancelAutoLockTimer()
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                // Playing counts as activity for the 15-minute auto-lock; paused, the countdown runs
+                VaultLock.setPlaying(isPlaying)
+                val now = SystemClock.elapsedRealtime()
+                if (isPlaying) {
+                    playingSince = now
+                } else if (playingSince > 0) {
+                    watchedMs += now - playingSince
+                    playingSince = 0
+                }
             }
         })
 
@@ -230,8 +248,11 @@ class PlayerActivity : AppCompatActivity() {
             KeyEvent.KEYCODE_DPAD_UP -> speedMenuIndex = (speedMenuIndex + 1).coerceAtMost(SPEEDS.size - 1)
             KeyEvent.KEYCODE_DPAD_DOWN -> speedMenuIndex = (speedMenuIndex - 1).coerceAtLeast(0)
             KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_ENTER, KeyEvent.KEYCODE_NUMPAD_ENTER -> {
-                currentSpeedIndex = speedMenuIndex
-                exoPlayer?.playbackParameters = PlaybackParameters(SPEEDS[currentSpeedIndex])
+                if (speedMenuIndex != currentSpeedIndex) {
+                    currentSpeedIndex = speedMenuIndex
+                    exoPlayer?.playbackParameters = PlaybackParameters(SPEEDS[currentSpeedIndex])
+                    logEvent("speed", exoPlayer?.currentPosition ?: 0L, formatSpeed(SPEEDS[currentSpeedIndex]))
+                }
                 closeSpeedMenu()
                 return true
             }
@@ -251,15 +272,14 @@ class PlayerActivity : AppCompatActivity() {
 
     // --- Keys ---
 
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.action == KeyEvent.ACTION_DOWN) {
-            scheduleOrCancelAutoLockTimer()
-        }
-        return super.dispatchKeyEvent(event)
+    override fun onUserInteraction() {
+        super.onUserInteraction()
+        VaultLock.touch()
     }
 
     override fun onKeyDown(keyCode: Int, event: KeyEvent): Boolean {
         // Panic Button Handler (Double-tap BACK or MENU key)
+        if (keyCode == KeyEvent.KEYCODE_MENU) logExit()
         if (PanicManager.handleKeyEvent(this, keyCode, event)) {
             releasePlayer()
             return true
@@ -328,11 +348,14 @@ class PlayerActivity : AppCompatActivity() {
         if (player.playbackState == Player.STATE_ENDED) {
             player.seekTo(0)
             player.play()
+            logEvent("play", 0L, "again")
         } else if (player.playWhenReady) {
             player.pause()
             syncProgress()
+            logEvent("pause", player.currentPosition)
         } else {
             player.play()
+            logEvent("resume", player.currentPosition)
         }
         showOverlay()
     }
@@ -340,13 +363,48 @@ class PlayerActivity : AppCompatActivity() {
     /** Silent seek: nothing is shown (an overlay that is already up just updates). */
     private fun seekBy(player: ExoPlayer, deltaMs: Long) {
         val now = SystemClock.uptimeMillis()
-        val base = if (now - lastSeekAt < SEEK_CHAIN_WINDOW_MS) lastSeekTarget else player.currentPosition
+        val chained = now - lastSeekAt < SEEK_CHAIN_WINDOW_MS
+        val base = if (chained) lastSeekTarget else player.currentPosition
+        if (!chained || seekChainFrom < 0) seekChainFrom = player.currentPosition
         val duration = player.duration.takeIf { it > 0 } ?: Long.MAX_VALUE
         val target = (base + deltaMs).coerceIn(0L, (duration - 1000L).coerceAtLeast(0L))
         player.seekTo(target)
         lastSeekTarget = target
         lastSeekAt = now
         if (bottomOverlay.visibility == View.VISIBLE) updateOverlay()
+        // A run of LEFT/RIGHT presses is logged once, as where it started and where it ended
+        uiHandler.removeCallbacks(logSeekRunnable)
+        uiHandler.postDelayed(logSeekRunnable, SEEK_CHAIN_WINDOW_MS)
+    }
+
+    // --- Activity log ---
+
+    private fun logEvent(event: String, positionMs: Long, detail: String = "", watchedSec: Double? = null) {
+        val session = playerSession ?: return
+        val video = videoItem ?: return
+        ApiClient.logActivity(session, event, video.id, positionMs / 1000.0, watchedSec, detail)
+    }
+
+    private fun logSeekChain() {
+        val from = seekChainFrom
+        seekChainFrom = -1L
+        if (from < 0) return
+        val to = lastSeekTarget
+        val dir = if (to >= from) "forward" else "back"
+        logEvent("seek", to, "${formatTime(from)} → ${formatTime(to)} ($dir ${formatTime(kotlin.math.abs(to - from))})")
+    }
+
+    /** "Closed video" with where it stopped and how long it actually played. Logged once. */
+    private fun logExit() {
+        if (exitLogged) return
+        val player = exoPlayer ?: return
+        exitLogged = true
+        if (seekChainFrom >= 0) {
+            uiHandler.removeCallbacks(logSeekRunnable)
+            logSeekChain()
+        }
+        val playedMs = watchedMs + if (playingSince > 0) SystemClock.elapsedRealtime() - playingSince else 0L
+        logEvent("exit", player.currentPosition, watchedSec = playedMs / 1000.0)
     }
 
     // --- Progress sync & auto-lock ---
@@ -383,33 +441,9 @@ class PlayerActivity : AppCompatActivity() {
         }
     }
 
-    private fun scheduleOrCancelAutoLockTimer() {
-        autoLockHandler.removeCallbacks(autoLockRunnable)
-
-        if (!TVDiagnosticsApp.instance.preferences.isAutoLockEnabled) {
-            return
-        }
-
-        val player = exoPlayer ?: return
-        when {
-            player.playbackState == Player.STATE_ENDED -> {
-                autoLockHandler.postDelayed(autoLockRunnable, ENDED_AUTO_LOCK_TIMEOUT_MS)
-            }
-            !player.playWhenReady -> {
-                autoLockHandler.postDelayed(autoLockRunnable, PAUSE_AUTO_LOCK_TIMEOUT_MS)
-            }
-        }
-    }
-
-    private fun triggerAutoLock() {
-        if (isFinishing || isDestroyed) return
-        autoLockHandler.removeCallbacks(autoLockRunnable)
-        releasePlayer()
-        VaultLock.lockAndPrompt(this)
-    }
-
     private fun releasePlayer() {
         val player = exoPlayer ?: return
+        logExit()
         progressSyncJob?.cancel()
         syncProgress()
         player.stop()
@@ -419,14 +453,19 @@ class PlayerActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        autoLockHandler.removeCallbacks(autoLockRunnable)
         exoPlayer?.pause()
         syncProgress()
     }
 
+    override fun onStop() {
+        // Before super: leaving the app locks the vault in onStop, and the log should read exit → lock
+        logExit()
+        super.onStop()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
-        autoLockHandler.removeCallbacks(autoLockRunnable)
+        VaultLock.setPlaying(false)
         uiHandler.removeCallbacksAndMessages(null)
         releasePlayer()
     }
@@ -451,7 +490,5 @@ class PlayerActivity : AppCompatActivity() {
         private const val SEEK_STEP_MS = 10_000L
         private const val SEEK_CHAIN_WINDOW_MS = 1500L
         private const val OVERLAY_TIMEOUT_MS = 2500L
-        private const val PAUSE_AUTO_LOCK_TIMEOUT_MS = 15 * 60 * 1000L // 15 minutes
-        private const val ENDED_AUTO_LOCK_TIMEOUT_MS = 5 * 60 * 1000L   // 5 minutes
     }
 }

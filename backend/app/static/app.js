@@ -1,3 +1,13 @@
+// Signed out (session expired or password changed): back to the login page
+const _fetch = window.fetch.bind(window);
+window.fetch = async (...args) => {
+    const res = await _fetch(...args);
+    if (res.status === 401 && !String(args[0]).includes("/api/v1/auth/")) {
+        window.location.href = "/admin/login?next=" + encodeURIComponent(location.pathname + location.hash);
+    }
+    return res;
+};
+
 let allVideos = [];
 let allTags = [];
 let currentRatingFilter = null;
@@ -17,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     loadTags();
     loadUsers();
     checkMountStatus();
+    if (location.hash === "#activity") switchTab("activity");
     // Periodic status heartbeat
     setInterval(checkMountStatus, 10000);
 
@@ -740,6 +751,10 @@ async function loadUsers() {
         const res = await fetch("/api/v1/users");
         const users = await res.json();
         userNames = Object.fromEntries(users.map(u => [u.id, u.name]));
+        const userSelect = document.getElementById("activityUser");
+        if (userSelect && userSelect.options.length === 1) {
+            users.forEach(u => userSelect.add(new Option(u.name, u.id)));
+        }
         panel.innerHTML = users.map(u => `
             <div class="user-card">
                 <div class="user-info">
@@ -766,4 +781,163 @@ async function resetUserPin(userId) {
     } catch (err) {
         showAlert("Failed to reset code: " + err.message, "error");
     }
+}
+
+
+// --- Tabs ---
+
+function switchTab(name) {
+    document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === name));
+    document.getElementById("libraryView").classList.toggle("hidden", name !== "library");
+    document.getElementById("activityView").classList.toggle("hidden", name !== "activity");
+    history.replaceState(null, "", name === "activity" ? "#activity" : location.pathname);
+    if (name === "activity") loadActivity();
+}
+
+// --- Activity log ---
+
+const EVENT_LABELS = {
+    unlock: ["🔓", "Unlocked"],
+    play: ["▶", "Play"],
+    pause: ["⏸", "Pause"],
+    resume: ["▶", "Resume"],
+    seek: ["⏩", "Skip"],
+    speed: ["⚡", "Speed"],
+    ended: ["🏁", "Finished"],
+    exit: ["⏹", "Closed video"],
+    lock: ["🔒", "Locked"],
+    code_changed: ["🔑", "Changed own code"],
+    wrong_code: ["⛔", "Wrong TV code"],
+    code_reset: ["🔑", "Code reset to default"],
+    admin_login: ["👤", "Console sign-in"],
+    admin_login_failed: ["⛔", "Console sign-in failed"]
+};
+
+const LOCK_REASONS = {
+    manual: "Lock button",
+    back: "Back to the start screen",
+    home: "Left the app (Home / app switch)",
+    idle: "15 min without activity",
+    panic: "Panic key",
+    expired: "Code changed or reset"
+};
+
+function fmtClock(ts) {
+    return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function fmtHM(ts) {
+    return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function fmtDay(ts) {
+    const d = new Date(ts);
+    const today = new Date();
+    const yesterday = new Date(Date.now() - 86400000);
+    if (d.toDateString() === today.toDateString()) return "Today";
+    if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return d.toLocaleDateString([], { weekday: "short", day: "numeric", month: "short", year: d.getFullYear() === today.getFullYear() ? undefined : "numeric" });
+}
+
+function fmtSpan(seconds) {
+    seconds = Math.max(0, Math.round(seconds));
+    const h = Math.floor(seconds / 3600), m = Math.floor((seconds % 3600) / 60), s = seconds % 60;
+    if (h) return `${h}h ${m}m`;
+    if (m) return `${m}m ${s ? s + "s" : ""}`.trim();
+    return `${s}s`;
+}
+
+function fmtPos(seconds) {
+    if (seconds === null || seconds === undefined) return "";
+    return formatDuration(seconds);
+}
+
+function eventDetail(e) {
+    switch (e.event) {
+        case "play": return e.position > 1 ? `from ${fmtPos(e.position)}` : "from the start";
+        case "pause": case "resume": case "ended": return `at ${fmtPos(e.position)}`;
+        case "seek": return e.detail || `to ${fmtPos(e.position)}`;
+        case "speed": return e.detail;
+        case "exit": return `at ${fmtPos(e.position)}` + (e.watched ? ` · watched ${fmtSpan(e.watched)}` : "");
+        case "lock": return LOCK_REASONS[e.detail] || e.detail;
+        default: return e.detail || "";
+    }
+}
+
+function sessionStateBadge(s) {
+    if (s.state === "active") return `<span class="state state-active">● Active now</span>`;
+    if (s.state === "locked") return `<span class="state">🔒 ${escapeHtml(LOCK_REASONS[s.lock_reason] || s.lock_reason || "Locked")}</span>`;
+    return `<span class="state state-warn">No lock recorded</span>`;
+}
+
+async function loadActivity() {
+    const list = document.getElementById("activitySessions");
+    const other = document.getElementById("activityOther");
+    const days = document.getElementById("activityDays").value;
+    const user = document.getElementById("activityUser").value;
+    list.innerHTML = `<div class="empty-state">Loading activity...</div>`;
+    try {
+        const res = await fetch(`/api/v1/activity?days=${days}` + (user ? `&user_id=${user}` : ""));
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        renderActivity(data);
+    } catch (err) {
+        list.innerHTML = `<div class="empty-state">Could not load activity: ${escapeHtml(err.message)}</div>`;
+        other.innerHTML = "";
+    }
+}
+
+function renderActivity(data) {
+    const list = document.getElementById("activitySessions");
+    const other = document.getElementById("activityOther");
+    const sessions = data.sessions;
+    const totalWatched = sessions.reduce((n, s) => n + s.watched_seconds, 0);
+    const totalVideos = sessions.reduce((n, s) => n + s.videos_played, 0);
+    document.getElementById("activitySummary").textContent =
+        `${sessions.length} session${sessions.length === 1 ? "" : "s"} · ${totalVideos} video${totalVideos === 1 ? "" : "s"} played · ${fmtSpan(totalWatched)} watched`;
+
+    if (!sessions.length) {
+        list.innerHTML = `<div class="empty-state">No TV sessions in this period.</div>`;
+    } else {
+        let lastDay = "";
+        list.innerHTML = sessions.map((s, i) => {
+            const day = fmtDay(s.started_at);
+            const dayHeader = day !== lastDay ? `<div class="day-header">${day}</div>` : "";
+            lastDay = day;
+            const length = (new Date(s.ended_at) - new Date(s.started_at)) / 1000;
+            const titles = [...new Set(s.events.filter(e => e.event === "play").map(e => e.video_title))].filter(Boolean);
+            const rows = s.events.map(e => {
+                const [icon, label] = EVENT_LABELS[e.event] || ["•", e.event];
+                return `<tr class="ev-${e.event}">
+                    <td class="ev-time">${fmtClock(e.ts)}</td>
+                    <td class="ev-label"><span class="ev-icon">${icon}</span>${label}</td>
+                    <td class="ev-video">${e.video_title ? escapeHtml(e.video_title) : ""}</td>
+                    <td class="ev-detail">${escapeHtml(eventDetail(e))}</td>
+                </tr>`;
+            }).join("");
+            return `${dayHeader}
+            <details class="session-card"${i === 0 && s.state === "active" ? " open" : ""}>
+                <summary>
+                    <span class="session-user">${escapeHtml(s.user_name)}</span>
+                    <span class="session-time">${fmtHM(s.started_at)} → ${fmtHM(s.ended_at)} <em>${fmtSpan(length)}</em></span>
+                    <span class="session-stats">▶ ${s.videos_played} video${s.videos_played === 1 ? "" : "s"} · ${fmtSpan(s.watched_seconds)} watched</span>
+                    ${sessionStateBadge(s)}
+                    <span class="session-device">${escapeHtml(s.device || "Unknown device")} · ${escapeHtml(s.ip)}</span>
+                    ${titles.length ? `<span class="session-titles">${titles.map(escapeHtml).join(" · ")}</span>` : ""}
+                </summary>
+                <table class="timeline"><tbody>${rows}</tbody></table>
+            </details>`;
+        }).join("");
+    }
+
+    const events = data.other_events;
+    other.innerHTML = events.length ? `<table class="timeline other-table"><tbody>${events.map(e => {
+        const [icon, label] = EVENT_LABELS[e.event] || ["•", e.event];
+        return `<tr class="ev-${e.event}">
+            <td class="ev-time">${fmtDay(e.ts)} ${fmtClock(e.ts)}</td>
+            <td class="ev-label"><span class="ev-icon">${icon}</span>${label}</td>
+            <td class="ev-video">${escapeHtml(e.user_name || e.detail || "")}</td>
+            <td class="ev-detail">${escapeHtml(e.ip)}${e.device ? " · " + escapeHtml(e.device.slice(0, 60)) : ""}</td>
+        </tr>`;
+    }).join("")}</tbody></table>` : `<div class="empty-state small">Nothing in this period.</div>`;
 }

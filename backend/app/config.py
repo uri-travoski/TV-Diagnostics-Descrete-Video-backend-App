@@ -7,7 +7,7 @@ DATA_DIR = Path(os.getenv("DATA_DIR", str(BASE_DIR / "data")))
 DB_DIR = DATA_DIR / "db"
 THUMBNAILS_DIR = DATA_DIR / "thumbnails"
 
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.2.0"
 
 # Ensure directories exist
 DB_DIR.mkdir(parents=True, exist_ok=True)
@@ -24,7 +24,15 @@ PORT = int(os.getenv("PORT", "8090"))
 
 # Security
 NOTES_PIN = os.getenv("NOTES_PIN", "1234")  # 4-digit PIN for TV Notes visibility unlock
-AUTH_TOKEN = os.getenv("AUTH_TOKEN", "tv-diag-secret-token")
+
+# Admin console login (/admin and every API call made without a TV session token).
+# With no ADMIN_PASSWORD set, the console stays locked.
+ADMIN_USER = os.getenv("ADMIN_USER", "admin").strip()
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+ADMIN_SESSION_HOURS = int(os.getenv("ADMIN_SESSION_HOURS", "24"))
+
+# Activity log (playback, unlocks, wrong codes) shown on /admin; older entries are deleted
+ACTIVITY_RETENTION_DAYS = int(os.getenv("ACTIVITY_RETENTION_DAYS", "180"))
 
 
 # Video Directories to scan (supports comma-separated list of paths)
@@ -52,9 +60,10 @@ USERS = {
     },
 }
 
-# Every folder that gets scanned: the union of all users' folders plus any extra VIDEO_DIRS.
+# Every folder that gets scanned: the union of all users' folders. Nothing else on the mount
+# is scanned (VIDEO_DIRS only matters as user 2's library when USER2_DIRS isn't set).
 VIDEO_DIRS = []
-for _p in [d for u in USERS.values() for d in u["dirs"]] + _parse_dirs(os.getenv("VIDEO_DIRS", "")):
+for _p in [d for u in USERS.values() for d in u["dirs"]]:
     if _p not in VIDEO_DIRS:
         VIDEO_DIRS.append(_p)
 
@@ -74,6 +83,12 @@ SCAN_ON_STARTUP = os.getenv("SCAN_ON_STARTUP", "true").lower() in ("true", "1", 
 SCAN_INTERVAL_MINUTES = int(os.getenv("SCAN_INTERVAL_MINUTES", "30"))
 MOUNT_POLL_INTERVAL_SECONDS = int(os.getenv("MOUNT_POLL_INTERVAL_SECONDS", "5"))
 ALLOW_PRUNE = os.getenv("ALLOW_PRUNE", "false").lower() in ("true", "1", "yes")
+# Rescan within seconds of files being added, renamed or removed (inotify). Network mounts
+# (SMB/NFS) don't report changes made by other machines: the periodic scan still covers those.
+WATCH_FOLDERS = os.getenv("WATCH_FOLDERS", "true").lower() in ("true", "1", "yes")
+WATCH_DEBOUNCE_SECONDS = int(os.getenv("WATCH_DEBOUNCE_SECONDS", "10"))
+# Build every video's 7-second preview frames in the background after each scan
+PREGENERATE_PREVIEWS = os.getenv("PREGENERATE_PREVIEWS", "true").lower() in ("true", "1", "yes")
 
 # Discreet Ratings: 0 = unrated ('○'), 1 = 1 circle ('●'), 2 = 2 circles ('●●')
 RATING_MAP = {

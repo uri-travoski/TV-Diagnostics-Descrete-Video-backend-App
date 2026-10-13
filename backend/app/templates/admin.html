@@ -26,13 +26,45 @@
             <a href="/help" target="_blank" class="btn btn-secondary" style="text-decoration: none;" title="Open TV App & Backend User Manual">
                 ❓ Help &amp; Guide
             </a>
-            <a href="/" class="btn btn-secondary" onclick="sessionStorage.removeItem('tv_pin')" style="text-decoration: none;" title="Lock console and return to Decoy Probe">
-                🔒 Lock
+            <a href="/admin/logout" class="btn btn-secondary" style="text-decoration: none;" title="Sign out of the console">
+                Sign out
             </a>
         </div>
     </header>
 
-    <main class="container">
+    <nav class="tab-bar">
+        <button class="tab active" data-tab="library" onclick="switchTab('library')">Library</button>
+        <button class="tab" data-tab="activity" onclick="switchTab('activity')">Activity</button>
+    </nav>
+
+    <!-- Activity log: one card per TV session (code entry → lock), expandable to every event -->
+    <main class="container hidden" id="activityView">
+        <section class="control-bar activity-controls">
+            <div class="sort-filter-box">
+                <label for="activityUser">User:</label>
+                <select id="activityUser" onchange="loadActivity()">
+                    <option value="">Everyone</option>
+                </select>
+            </div>
+            <div class="sort-filter-box">
+                <label for="activityDays">Period:</label>
+                <select id="activityDays" onchange="loadActivity()">
+                    <option value="1">Last 24 hours</option>
+                    <option value="7" selected>Last 7 days</option>
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="365">Last year</option>
+                </select>
+            </div>
+            <button class="btn btn-secondary" onclick="loadActivity()">↻ Refresh</button>
+            <span id="activitySummary" class="activity-summary"></span>
+        </section>
+        <section id="activitySessions" class="activity-sessions"></section>
+        <h3 class="activity-heading">Codes &amp; console sign-ins</h3>
+        <section id="activityOther" class="activity-other"></section>
+    </main>
+
+    <main class="container" id="libraryView">
         <!-- SMB Mount Waiting Banner -->
         <div id="smbMountNotice" class="mount-notice hidden">
             <span class="notice-icon">⏳</span>

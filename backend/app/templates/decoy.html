@@ -74,51 +74,9 @@
             <span class="metric-val">v{{ version }}</span>
         </div>
 
-        <div class="pin-auth">
-            <label for="pinCode" class="metric-label">Diagnostics Access Code (4–6 Digits):</label>
-            <div class="pin-input-group">
-                <input type="password" id="pinCode" class="pin-field" minlength="4" maxlength="6" placeholder="••••••" autocomplete="off">
-                <button class="btn btn-primary" onclick="verifyPin()">Access</button>
-            </div>
-            <div id="authError" style="color: #f87171; font-size: 13px; margin-top: 8px; display: none;">Invalid diagnostic access code</div>
-            <div style="text-align: center; margin-top: 20px;">
-                <a href="/help" target="_blank" style="color: #64748b; font-size: 12px; text-decoration: none;">📖 System Manual &amp; Setup Guide</a>
-            </div>
+        <div class="pin-auth" style="text-align: center;">
+            <a href="/admin/login" class="btn btn-primary" style="text-decoration: none;">Operator Console</a>
         </div>
     </div>
-
-    <script>
-        document.getElementById("pinCode").addEventListener("keyup", function(e) {
-            if (e.key === "Enter" || e.keyCode === 13) verifyPin();
-        });
-
-        async function verifyPin() {
-            const pin = document.getElementById("pinCode").value.trim();
-            const err = document.getElementById("authError");
-            if (!pin) {
-                err.textContent = "Please enter diagnostic access code";
-                err.style.display = "block";
-                return;
-            }
-            try {
-                const res = await fetch("/api/v1/auth/verify", {
-                    method: "POST",
-                    headers: {"Content-Type": "application/json"},
-                    body: JSON.stringify({ pin: pin })
-                });
-                const data = await res.json();
-                if (data.valid) {
-                    sessionStorage.setItem("tv_pin", pin);
-                    window.location.href = "/admin?pin=" + encodeURIComponent(pin);
-                } else {
-                    err.textContent = "Invalid diagnostic access code";
-                    err.style.display = "block";
-                }
-            } catch (e) {
-                err.textContent = "Server error verifying code";
-                err.style.display = "block";
-            }
-        }
-    </script>
 </body>
 </html>

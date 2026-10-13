@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Console Login</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-body">
+    <form class="login-card" method="post" action="/admin/login">
+        <div class="brand">
+            <span class="icon">🎬</span>
+            <div class="brand-text">
+                <h1>TV Media Manager <span class="version-badge">v{{ version }}</span></h1>
+                <span class="subtitle">Sign in to the console</span>
+            </div>
+        </div>
+        <input type="hidden" name="next" value="{{ next }}">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" value="{{ username }}" autocomplete="username" autofocus required>
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
+        {% if error %}<div class="login-error">{{ error }}</div>{% endif %}
+        <button type="submit" class="btn btn-primary">Sign in</button>
+    </form>
+</body>
+</html>

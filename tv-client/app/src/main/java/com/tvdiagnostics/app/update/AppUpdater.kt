@@ -146,6 +146,49 @@ object AppUpdater {
         }
     }
 
+    /**
+     * Full update: install permission check, download with progress, then the system installer.
+     * Status lines go to [onStatus]; returns true once the installer was opened.
+     */
+    suspend fun downloadAndInstall(context: Context, release: Release, onStatus: (String) -> Unit): Boolean {
+        if (!canInstall(context)) {
+            onStatus("Allow \"Install unknown apps\" for TV Diagnostics, then press Update again")
+            if (!openInstallPermissionSettings(context)) {
+                onStatus("Enable unknown app installs for TV Diagnostics in Android settings, then press Update again")
+            }
+            return false
+        }
+        onStatus("Downloading v${release.version}...")
+        val apk = download(context, release) { pct -> onStatus("Downloading v${release.version}... $pct%") }
+        if (apk == null) {
+            onStatus("Download failed. Check the internet connection and try again.")
+            return false
+        }
+        onStatus("Installing v${release.version}...")
+        return try {
+            install(context, apk)
+            true
+        } catch (e: Exception) {
+            onStatus("Could not open the installer: ${e.message}")
+            false
+        }
+    }
+
+    /** Result of the once-per-launch background check, shared by the start screen and Settings. */
+    @Volatile
+    var pendingUpdate: Release? = null
+
+    /** Checks GitHub once per app launch; returns the newer release, if any. */
+    suspend fun checkOnStartup(context: Context): Release? {
+        if (startupChecked) return pendingUpdate
+        startupChecked = true
+        val latest = fetchLatest() ?: return null
+        if (isNewer(latest.version, currentVersion(context))) pendingUpdate = latest
+        return pendingUpdate
+    }
+
+    private var startupChecked = false
+
     /** Hands the downloaded APK to the system installer. */
     fun install(context: Context, apk: File) {
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", apk)

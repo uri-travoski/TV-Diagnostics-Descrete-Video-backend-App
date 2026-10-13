@@ -16,6 +16,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.tvdiagnostics.app.R
 import com.tvdiagnostics.app.security.VaultLock
+import com.tvdiagnostics.app.update.AppUpdater
 import com.tvdiagnostics.app.vault.VaultActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -52,6 +53,7 @@ class DecoyActivity : AppCompatActivity() {
         detectDisplaySpecs()
         detectNetworkSpecs()
         setupListeners()
+        checkForUpdate()
 
         if (intent.getBooleanExtra(EXTRA_AUTO_PROMPT_PIN, false)) {
             VaultLock.promptOnReturn = false
@@ -127,6 +129,39 @@ class DecoyActivity : AppCompatActivity() {
 
         btnServerCode.setOnClickListener {
             showPinDialog()
+        }
+    }
+
+    /** Once per app launch: if GitHub has a newer release, show an Update button (installs on press). */
+    private fun checkForUpdate() {
+        val btnUpdate = findViewById<Button>(R.id.btnAppUpdate)
+        btnUpdate.setOnFocusChangeListener { v, hasFocus ->
+            v.animate().scaleX(if (hasFocus) 1.05f else 1.0f).scaleY(if (hasFocus) 1.05f else 1.0f).setDuration(120).start()
+        }
+        CoroutineScope(Dispatchers.Main).launch {
+            val release = AppUpdater.checkOnStartup(this@DecoyActivity) ?: return@launch
+            if (isFinishing || isDestroyed) return@launch
+            if (!AppUpdater.isNewer(release.version, AppUpdater.currentVersion(this@DecoyActivity))) return@launch
+            btnUpdate.text = "⬆ Update to v${release.version}"
+            btnUpdate.visibility = android.view.View.VISIBLE
+            tvLogOutput.append("\n[Update] Version ${release.version} is available.")
+            var updating = false
+            btnUpdate.setOnClickListener {
+                if (updating) return@setOnClickListener
+                updating = true
+                CoroutineScope(Dispatchers.Main).launch {
+                    AppUpdater.downloadAndInstall(this@DecoyActivity, release) { status ->
+                        // Download percentages only on the button; everything else also goes to the log
+                        if (status.endsWith("%")) {
+                            btnUpdate.text = status
+                        } else {
+                            tvLogOutput.append("\n[Update] $status")
+                        }
+                    }
+                    updating = false
+                    btnUpdate.text = "⬆ Update to v${release.version}"
+                }
+            }
         }
     }
 

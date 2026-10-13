@@ -34,6 +34,6 @@ object PanicManager {
 
     fun triggerPanic(activity: Activity) {
         // Lock vault, clear the back stack and present the Decoy code prompt
-        VaultLock.lockAndPrompt(activity)
+        VaultLock.lockAndPrompt(activity, LockReason.PANIC)
     }
 }

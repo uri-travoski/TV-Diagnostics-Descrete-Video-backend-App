@@ -1,5 +1,6 @@
 package com.tvdiagnostics.app.vault
 
+import android.app.Activity
 import android.os.Handler
 import android.os.Looper
 import android.view.LayoutInflater
@@ -77,6 +78,7 @@ class VideoAdapter(
         private var previewIndex = 0
         private val previewStep = object : Runnable {
             override fun run() {
+                if (!screenAlive()) return
                 val video = item ?: return
                 val count = video.getPreviewFrameCount()
                 if (count == 0) return
@@ -86,6 +88,20 @@ class VideoAdapter(
                 previewIndex++
                 previewHandler.postDelayed(this, PREVIEW_FRAME_MS)
             }
+        }
+
+        init {
+            // The library can close (lock, HOME, BACK) while a card is previewing: stop with it
+            itemView.addOnAttachStateChangeListener(object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) {}
+                override fun onViewDetachedFromWindow(v: View) = stopPreview()
+            })
+        }
+
+        /** Glide refuses loads for a destroyed activity (and throws): check before every load. */
+        private fun screenAlive(): Boolean {
+            val activity = itemView.context as? Activity ?: return true
+            return !activity.isDestroyed && !activity.isFinishing
         }
 
         fun bind(item: VideoItem, onVideoClick: (VideoItem) -> Unit) {
@@ -147,6 +163,7 @@ class VideoAdapter(
         }
 
         private fun startPreview() {
+            if (!screenAlive()) return
             val video = item ?: return
             if (video.getPreviewFrameCount() == 0) return
             previewHandler.removeCallbacks(previewStep)
@@ -158,7 +175,7 @@ class VideoAdapter(
 
         fun stopPreview() {
             previewHandler.removeCallbacks(previewStep)
-            Glide.with(itemView.context).clear(ivPreview)
+            if (screenAlive()) Glide.with(itemView.context).clear(ivPreview)
             ivPreview.setImageDrawable(null)
         }
 

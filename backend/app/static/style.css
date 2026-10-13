@@ -828,3 +828,76 @@ body {
 .user-meta { font-size: 12px; color: var(--text-muted); }
 .user-dirs { font-size: 11px; color: var(--text-muted); font-family: monospace; overflow-wrap: anywhere; }
 .user-card .btn:disabled { opacity: 0.45; cursor: default; }
+
+/* --- Login --- */
+.login-body { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
+.login-card {
+    width: 100%; max-width: 380px; background: var(--card-bg); border: 1px solid var(--border-color);
+    border-radius: 12px; padding: 28px; display: flex; flex-direction: column; gap: 8px;
+}
+.login-card .brand { margin-bottom: 14px; }
+.login-card label { font-size: 13px; color: var(--text-muted); margin-top: 6px; }
+.login-card input[type=text], .login-card input[type=password] {
+    background: var(--bg-color); border: 1px solid var(--border-color); color: var(--text-main);
+    border-radius: 8px; padding: 10px 12px; font-size: 15px;
+}
+.login-card input:focus { outline: none; border-color: var(--accent); }
+.login-card .btn { margin-top: 14px; justify-content: center; }
+.login-error { color: var(--danger); font-size: 13px; margin-top: 6px; }
+
+/* --- Tabs --- */
+.tab-bar { display: flex; gap: 4px; padding: 10px 28px 0; border-bottom: 1px solid var(--border-color); }
+.tab {
+    background: none; border: none; color: var(--text-muted); font-size: 14px; font-weight: 600;
+    padding: 8px 16px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+}
+.tab:hover { color: var(--text-main); }
+.tab.active { color: var(--text-main); border-bottom-color: var(--accent); }
+
+/* --- Activity log --- */
+.activity-controls { align-items: center; }
+.activity-summary { color: var(--text-muted); font-size: 13px; margin-left: auto; }
+.activity-sessions { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
+.day-header { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 14px 0 2px; }
+.session-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; }
+.session-card[open] { border-color: #334155; }
+.session-card summary {
+    list-style: none; cursor: pointer; padding: 12px 16px; display: grid; align-items: center; gap: 4px 16px;
+    grid-template-columns: minmax(80px, auto) minmax(150px, auto) 1fr auto;
+}
+.session-card summary::-webkit-details-marker { display: none; }
+.session-card summary:hover { background: var(--card-hover); border-radius: 10px; }
+.session-user { font-weight: 700; }
+.session-time { font-variant-numeric: tabular-nums; }
+.session-time em { font-style: normal; color: var(--text-muted); font-size: 12px; margin-left: 6px; }
+.session-stats { color: var(--text-muted); font-size: 13px; }
+.session-device { grid-column: 1 / 3; color: var(--text-muted); font-size: 12px; }
+.session-titles { grid-column: 3 / 5; color: #cbd5e1; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.state { font-size: 12px; color: var(--text-muted); justify-self: end; white-space: nowrap; }
+.state-active { color: var(--success); font-weight: 600; }
+.state-warn { color: var(--circle-filled); }
+.timeline { width: 100%; border-collapse: collapse; font-size: 13px; }
+.session-card .timeline { border-top: 1px solid var(--border-color); }
+.timeline td { padding: 6px 16px; border-bottom: 1px solid rgba(30, 41, 59, 0.6); vertical-align: top; }
+.timeline tr:last-child td { border-bottom: none; }
+.ev-time { width: 90px; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.other-table .ev-time { width: 170px; }
+.ev-label { width: 190px; white-space: nowrap; }
+.ev-icon { display: inline-block; width: 22px; }
+.ev-video { color: #e2e8f0; }
+.ev-detail { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.ev-play .ev-label, .ev-play .ev-video { font-weight: 600; }
+.ev-pause, .ev-seek, .ev-speed { opacity: 0.8; }
+.ev-lock td, .ev-unlock td { background: rgba(59, 130, 246, 0.05); }
+.ev-wrong_code .ev-label, .ev-admin_login_failed .ev-label { color: var(--danger); }
+.activity-heading { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
+.activity-other { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; }
+.empty-state.small { padding: 16px; font-size: 13px; }
+
+@media (max-width: 760px) {
+    .tab-bar { padding: 8px 16px 0; }
+    .session-card summary { grid-template-columns: 1fr auto; }
+    .session-device, .session-titles { grid-column: 1 / -1; }
+    .ev-label { width: auto; }
+    .ev-video { display: none; }
+}

@@ -13,6 +13,9 @@ shutil.copy(os.path.join(_samples, "test_clip_75s.mp4"), os.path.join(_user1_dir
 os.environ["DATA_DIR"] = os.path.join(_tmp, "data")
 os.environ["USER1_DIRS"] = _user1_dir
 os.environ["USER2_DIRS"] = _samples
+os.environ["ADMIN_USER"] = "admin"
+os.environ["ADMIN_PASSWORD"] = "test-pass"
+os.environ["PREGENERATE_PREVIEWS"] = "false"  # exercised directly in test_pregenerated_previews
 
 from fastapi.testclient import TestClient
 from app.main import app
@@ -21,12 +24,51 @@ from app.scanner import scan_directories_sync
 
 init_db()
 scan_directories_sync()
-client = TestClient(app)
+anon = TestClient(app)    # no login: what anyone on the network gets
+client = TestClient(app)  # signed in to the admin console (cookie kept between calls)
 
 def login(pin):
-    res = client.post("/api/v1/auth/verify", json={"pin": pin}).json()
+    res = anon.post("/api/v1/auth/verify", json={"pin": pin}).json()
     assert res["valid"] is True, res
     return {"X-Session-Token": res["token"]}
+
+def test_admin_login():
+    # Without the console login nothing but the TV code check and a bare status is reachable
+    assert anon.get("/admin", follow_redirects=False).status_code == 303
+    assert anon.get("/help", follow_redirects=False).status_code == 303
+    for path in ("/api/v1/videos", "/api/v1/users", "/api/v1/tags", "/api/v1/activity", "/api/v1/videos/1/stream"):
+        assert anon.get(path).status_code == 401, path
+    assert anon.post("/api/v1/scan").status_code == 401
+    assert anon.post("/api/v1/users/1/reset-pin").status_code == 401
+    assert anon.get("/docs").status_code == 404 and anon.get("/openapi.json").status_code == 404
+    assert set(anon.get("/api/v1/status").json()) == {"status", "version"}
+    # A TV session can't use admin-only routes either
+    assert anon.get("/api/v1/users", headers=login("482061")).status_code == 401
+
+    bad = client.post("/admin/login", data={"username": "admin", "password": "nope"}, follow_redirects=False)
+    assert bad.status_code == 401 and "Wrong username or password" in bad.text
+    ok = client.post("/admin/login", data={"username": "admin", "password": "test-pass", "next": "/admin"}, follow_redirects=False)
+    assert ok.status_code == 303 and ok.headers["location"] == "/admin", ok.text
+    assert client.get("/admin").status_code == 200
+    # Open redirects are refused
+    other = TestClient(app)
+    r = other.post("/admin/login", data={"username": "admin", "password": "test-pass", "next": "//evil.example"}, follow_redirects=False)
+    assert r.headers["location"] == "/admin"
+    print("✓ Admin console and API need the login; wrong password refused")
+
+def test_login_lockout():
+    from app.admin_auth import LoginLimiter
+    limiter = LoginLimiter()
+    for _ in range(4):
+        limiter.failed("1.2.3.4")
+    assert limiter.seconds_locked("1.2.3.4") == 0
+    limiter.failed("1.2.3.4")
+    assert 55 <= limiter.seconds_locked("1.2.3.4") <= 60
+    limiter.failed("1.2.3.4")
+    assert limiter.seconds_locked("1.2.3.4") > 60
+    limiter.succeeded("1.2.3.4")
+    assert limiter.seconds_locked("1.2.3.4") == 0
+    print("✓ Console sign-in locks out after 5 wrong passwords")
 
 def test_status():
     res = client.get("/api/v1/status")
@@ -41,6 +83,74 @@ def test_help_endpoint():
     assert res.status_code == 200
     assert "TV Diagnostics & Stealth Media Vault" in res.text
     print("✓ Help guide endpoint passed")
+
+def test_folders_and_activity():
+    s1 = anon.post("/api/v1/auth/verify", json={"pin": "002007", "device": "Test TV"}).json()
+    headers = {"X-Session-Token": s1["token"]}
+    videos = anon.get("/api/v1/videos", headers=headers).json()
+    assert videos[0]["folder"] == "user1" and videos[0]["play_count"] == 0
+    vid = videos[0]["id"]
+    sid = s1["session_id"]
+    for ev in [
+        {"event": "play", "video_id": vid, "position": 0},
+        {"event": "pause", "video_id": vid, "position": 30},
+        {"event": "resume", "video_id": vid, "position": 30},
+        {"event": "exit", "video_id": vid, "position": 60, "watched_seconds": 58},
+        {"event": "lock", "detail": "home"},
+    ]:
+        assert anon.post("/api/v1/activity", json={"session_id": sid, **ev}, headers=headers).status_code == 200
+    assert anon.post("/api/v1/activity", json={"session_id": sid, "event": "bogus"}, headers=headers).status_code == 400
+    assert anon.post("/api/v1/activity", json={"event": "play"}).status_code == 401
+    anon.post("/api/v1/auth/verify", json={"pin": "999999"})
+
+    assert anon.get("/api/v1/videos", headers=headers).json()[0]["play_count"] == 1
+    log = client.get("/api/v1/activity?days=1").json()
+    session = next(x for x in log["sessions"] if x["session_id"] == sid)
+    assert session["user_id"] == 1 and session["device"] == "Test TV"
+    assert session["state"] == "locked" and session["lock_reason"] == "home"
+    assert session["videos_played"] == 1 and session["watched_seconds"] == 58
+    assert [e["event"] for e in session["events"]] == ["unlock", "play", "pause", "resume", "exit", "lock"]
+    assert session["events"][1]["video_title"] == videos[0]["title"]
+    assert any(e["event"] == "wrong_code" for e in log["other_events"])
+    assert all(x["user_id"] == 2 for x in client.get("/api/v1/activity?days=1&user_id=2").json()["sessions"])
+    print("✓ Videos carry folder + play count; activity log groups events per session")
+
+def test_incremental_scan():
+    from app.scanner import scan_directories_sync as rescan
+    result = rescan()
+    assert result["indexed_count"] == 0 and result["unchanged_count"] == result["total_files"]
+    print("✓ Rescans skip unchanged files")
+
+def test_folder_watch():
+    import time
+    from app import scanner
+    scanner.start_folder_watch()
+    assert scanner.get_watch_state() == "watching"
+    scanner._change_pending = False
+    sub = os.path.join(_user1_dir, "holiday")
+    os.makedirs(sub)
+    shutil.copy(os.path.join(_samples, "test_clip_75s.mp4"), os.path.join(sub, "new_clip.mp4"))
+    for _ in range(50):
+        if scanner._change_pending:
+            break
+        time.sleep(0.1)
+    assert scanner._change_pending, "watcher did not notice the new file"
+    scanner.stop_folder_watch()
+    rescan = scanner.scan_directories_sync()
+    assert rescan["indexed_count"] == 1
+    videos = anon.get("/api/v1/videos", headers=login("002007")).json()
+    assert {v["folder"] for v in videos} == {"user1", "user1/holiday"}
+    print("✓ Folder watcher notices new videos; subfolders show as user1/holiday")
+
+def test_pregenerated_previews():
+    from app.metadata import generate_all_preview_frames, previews_complete, preview_dir
+    video = next(v for v in client.get("/api/v1/videos").json() if v["filename"] == "new_clip.mp4")
+    assert not previews_complete(video["filepath"])
+    assert generate_all_preview_frames(video["filepath"], video["duration"])
+    assert previews_complete(video["filepath"])
+    frames = sorted(int(f.stem) for f in preview_dir(video["filepath"]).glob("*.jpg"))
+    assert frames == list(range(10)), frames
+    print("✓ All 7-second preview frames built in one background pass")
 
 def test_pin_verification():
     res_bad = client.post("/api/v1/auth/verify", json={"pin": "000000"})
@@ -198,6 +308,8 @@ def test_progress_tracking_and_reset(video_id):
     print("✓ Backend Reset Playback Position passed (reset to 0.0s)")
 
 if __name__ == "__main__":
+    test_admin_login()
+    test_login_lockout()
     test_status()
     test_help_endpoint()
     test_pin_verification()
@@ -211,4 +323,8 @@ if __name__ == "__main__":
     test_user_libraries_are_separate()
     test_change_and_reset_pin()
     test_preview_frames(vid_id)
+    test_folders_and_activity()
+    test_incremental_scan()
+    test_folder_watch()
+    test_pregenerated_previews()
     print("\n🎉 ALL BACKEND TESTS PASSED!")

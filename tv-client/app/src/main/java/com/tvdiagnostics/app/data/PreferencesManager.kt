@@ -9,7 +9,8 @@ class PreferencesManager(context: Context) {
 
     init {
         // Codes now live on the backend per user; drop the old locally stored single PIN
-        prefs.edit().remove("pin_code").remove("is_vault_unlocked").apply()
+        // The inactivity auto-lock is always on now (15 minutes); its old on/off switch is gone
+        prefs.edit().remove("pin_code").remove("is_vault_unlocked").remove("is_auto_lock_enabled").apply()
     }
 
     var serverUrl: String
@@ -20,14 +21,15 @@ class PreferencesManager(context: Context) {
         get() = prefs.getBoolean(KEY_IS_NOTES_ENABLED, false)
         set(value) = prefs.edit().putBoolean(KEY_IS_NOTES_ENABLED, value).apply()
 
-    var isAutoLockEnabled: Boolean
-        get() = prefs.getBoolean(KEY_IS_AUTO_LOCK_ENABLED, true)
-        set(value) = prefs.edit().putBoolean(KEY_IS_AUTO_LOCK_ENABLED, value).apply()
+    /** Library sort order (SortOption name) */
+    var librarySort: String?
+        get() = prefs.getString(KEY_LIBRARY_SORT, null)
+        set(value) = prefs.edit().putString(KEY_LIBRARY_SORT, value).apply()
 
     companion object {
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_IS_NOTES_ENABLED = "is_notes_enabled"
-        private const val KEY_IS_AUTO_LOCK_ENABLED = "is_auto_lock_enabled"
+        private const val KEY_LIBRARY_SORT = "library_sort"
         const val DEFAULT_SERVER_URL = "http://tv-diagnostics:8090"
     }
 }

@@ -1,12 +1,15 @@
 import os
+import time
 import asyncio
+import threading
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from . import config
-from .metadata import extract_metadata, generate_thumbnail
+from .metadata import extract_metadata, generate_thumbnail, generate_all_preview_frames, previews_complete
 from .database import (
-    upsert_video, delete_missing_videos,
-    find_relocated_video, create_database_backup
+    upsert_video, delete_missing_videos, get_indexed_files, get_all_videos,
+    find_relocated_video, create_database_backup, prune_activity
 )
 
 
@@ -123,6 +126,8 @@ def scan_directories_sync() -> Dict[str, Any]:
     _is_scanning = True
     discovered_files = set()
     added_or_updated = 0
+    unchanged = 0
+    indexed = get_indexed_files()
 
     try:
         for video_dir in config.VIDEO_DIRS:
@@ -138,6 +143,16 @@ def scan_directories_sync() -> Dict[str, Any]:
                     if ext in config.SUPPORTED_EXTENSIONS:
                         full_path = str(Path(root) / file)
                         discovered_files.add(full_path)
+
+                        # Already indexed with the same size: skip ffprobe/ffmpeg (keeps rescans cheap)
+                        known = indexed.get(str(Path(full_path).resolve()))
+                        if known and known["duration"] > 0 and known["thumbnail_path"]:
+                            try:
+                                if os.path.getsize(full_path) == known["filesize"] and os.path.exists(known["thumbnail_path"]):
+                                    unchanged += 1
+                                    continue
+                            except OSError:
+                                pass
 
                         try:
                             # 1. Extract metadata via ffprobe
@@ -165,25 +180,136 @@ def scan_directories_sync() -> Dict[str, Any]:
         else:
             print("[Scanner Safety] 0 files discovered in scan. Skipping pruning to prevent accidental wipe.")
 
-        print(f"[Scanner] Scan complete. Processed {added_or_updated} files. Pruned {deleted_count} removed files.")
+        print(f"[Scanner] Scan complete. Processed {added_or_updated} new/changed files, {unchanged} unchanged. Pruned {deleted_count} removed files.")
 
-        # Create hot database backup snapshot upon scan completion
-        create_database_backup()
+        # Create hot database backup snapshot upon scan completion (only if anything changed)
+        if added_or_updated or deleted_count:
+            create_database_backup()
 
         _last_scan_result = {
             "status": "completed",
             "indexed_count": added_or_updated,
+            "unchanged_count": unchanged,
             "pruned_count": deleted_count,
             "total_files": len(discovered_files)
         }
         return _last_scan_result
     finally:
         _is_scanning = False
+        if config.PREGENERATE_PREVIEWS:
+            start_preview_builder()
 
 async def scan_directories_async() -> Dict[str, Any]:
     """Runs scan in a background thread."""
     loop = asyncio.get_event_loop()
     return await loop.run_in_executor(None, scan_directories_sync)
+
+# --- Folder watching: rescan a few seconds after files change ---
+
+_change_pending = False
+_last_change_at = 0.0
+_observer = None
+_watch_state = "off"   # "off", "watching", "unavailable"
+
+
+def _on_fs_change(path: str, is_directory: bool) -> None:
+    global _change_pending, _last_change_at
+    if is_directory or Path(path).suffix.lower() in config.SUPPORTED_EXTENSIONS:
+        _change_pending = True
+        _last_change_at = time.monotonic()
+
+
+def start_folder_watch() -> None:
+    """Watches every library folder (recursively) with inotify. Falls back to periodic scans on failure."""
+    global _observer, _watch_state
+    if not config.WATCH_FOLDERS or _observer is not None:
+        return
+    try:
+        from watchdog.observers import Observer
+        from watchdog.events import FileSystemEventHandler
+
+        class Handler(FileSystemEventHandler):
+            def on_any_event(self, event):
+                if event.event_type in ("opened", "closed_no_write"):
+                    return
+                _on_fs_change(event.src_path, event.is_directory)
+                dest = getattr(event, "dest_path", "")
+                if dest:
+                    _on_fs_change(dest, event.is_directory)
+
+        observer = Observer()
+        for video_dir in config.VIDEO_DIRS:
+            if Path(video_dir).is_dir():
+                observer.schedule(Handler(), str(video_dir), recursive=True)
+        observer.daemon = True
+        observer.start()
+        _observer = observer
+        _watch_state = "watching"
+        print(f"[Watcher] Watching {len(config.VIDEO_DIRS)} library folder(s) for new or removed videos.")
+    except Exception as e:
+        _watch_state = "unavailable"
+        print(f"[Watcher] Folder watching unavailable ({e}). Relying on the periodic scan every {config.SCAN_INTERVAL_MINUTES} min.")
+
+
+def stop_folder_watch() -> None:
+    global _observer, _watch_state
+    if _observer is not None:
+        try:
+            _observer.stop()
+        except Exception:
+            pass
+        _observer = None
+    _watch_state = "off"
+
+
+def get_watch_state() -> str:
+    return _watch_state
+
+
+# --- Background preview builder: all 7-second storyboard frames, one video at a time ---
+
+_preview_thread: Optional[threading.Thread] = None
+_preview_progress: Dict[str, Any] = {"running": False, "done": 0, "total": 0}
+
+
+def _build_previews() -> None:
+    try:
+        todo = [v for v in get_all_videos(sort_by="recent_desc")
+                if v["duration"] > config.PREVIEW_INTERVAL_SECONDS and not previews_complete(v["filepath"])]
+        _preview_progress.update(running=True, done=0, total=len(todo))
+        if todo:
+            print(f"[Previews] Building preview frames for {len(todo)} video(s) in the background...")
+        for v in todo:
+            if _is_scanning:
+                break  # the scan that just started will restart the builder when it ends
+            generate_all_preview_frames(v["filepath"], v["duration"])
+            _preview_progress["done"] += 1
+        if todo:
+            print(f"[Previews] Preview frames ready for {_preview_progress['done']} of {len(todo)} video(s).")
+    except Exception as e:
+        print(f"[Previews] Builder stopped: {e}")
+    finally:
+        _preview_progress["running"] = False
+
+
+def start_preview_builder() -> None:
+    global _preview_thread
+    if _preview_thread is not None and _preview_thread.is_alive():
+        return
+    _preview_thread = threading.Thread(target=_build_previews, name="preview-builder", daemon=True)
+    _preview_thread.start()
+
+
+def get_preview_progress() -> Dict[str, Any]:
+    return dict(_preview_progress)
+
+
+def prune_old_activity() -> None:
+    cutoff = (datetime.utcnow() - timedelta(days=config.ACTIVITY_RETENTION_DAYS)).isoformat(timespec="seconds")
+    removed = prune_activity(cutoff)
+    if removed:
+        print(f"[Activity] Removed {removed} log entries older than {config.ACTIVITY_RETENTION_DAYS} days.")
+
 
 async def mount_watcher_and_scanner_task():
     """
@@ -194,6 +320,7 @@ async def mount_watcher_and_scanner_task():
     3. Keeps monitoring health; if the SMB mount disconnects, it transitions back to
        waiting mode without deleting any database records.
     """
+    global _change_pending
     poll_interval = max(2, config.MOUNT_POLL_INTERVAL_SECONDS)
     scheduled_interval = max(60, config.SCAN_INTERVAL_MINUTES * 60)
     
@@ -213,6 +340,7 @@ async def mount_watcher_and_scanner_task():
                 if last_known_mounted:
                     print("[Mount Watcher] WARNING: SMB media folder disconnected or unmounted! Pausing scans and protecting database...")
                     last_known_mounted = False
+                    stop_folder_watch()
                 
                 if attempt_counter % 6 == 1:  # Log every ~30 seconds when waiting
                     unready_reasons = [f"{d['path']}: {d['reason']}" for d in _mount_details]
@@ -226,6 +354,13 @@ async def mount_watcher_and_scanner_task():
                 print(f"[Mount Watcher] SUCCESS: SMB media folder is mounted and accessible! Triggering scan...")
                 last_known_mounted = True
                 seconds_since_last_full_scan = 0
+                start_folder_watch()
+                await scan_directories_async()
+
+            # Files changed in a library folder: rescan once things have been quiet for a few seconds
+            if _change_pending and not _is_scanning and time.monotonic() - _last_change_at >= config.WATCH_DEBOUNCE_SECONDS:
+                _change_pending = False
+                print("[Watcher] Library folder changed. Rescanning...")
                 await scan_directories_async()
 
             # If already mounted, check if it's time for scheduled periodic rescan
@@ -234,6 +369,7 @@ async def mount_watcher_and_scanner_task():
                 print("[Mount Watcher] Starting scheduled periodic media rescan...")
                 seconds_since_last_full_scan = 0
                 await scan_directories_async()
+                prune_old_activity()
 
             await asyncio.sleep(poll_interval)
 

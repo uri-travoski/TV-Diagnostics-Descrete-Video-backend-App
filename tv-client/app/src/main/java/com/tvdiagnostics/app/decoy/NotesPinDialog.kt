@@ -10,6 +10,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import com.tvdiagnostics.app.R
+import com.tvdiagnostics.app.security.VaultLock
 import com.tvdiagnostics.app.TVDiagnosticsApp
 import com.tvdiagnostics.app.data.ApiClient
 import kotlinx.coroutines.CoroutineScope
@@ -33,6 +34,7 @@ class NotesPinDialog(
         setContentView(R.layout.dialog_notes_pin)
 
         window?.setBackgroundDrawableResource(android.R.color.transparent)
+        VaultLock.trackInput(window)
 
         tvError = findViewById(R.id.tvPinError)
 
